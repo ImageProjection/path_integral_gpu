@@ -1,0 +1,5 @@
+Plans:
+-allow gigantic betas by using batches
+loaded into shared memory from DRAM
+-add histogram functionality
+
