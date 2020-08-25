@@ -20,15 +20,16 @@ void print_traj(FILE* out_traj,double* traj)
     }    
 }
 
-void print_hist(FILE* out_hist,int* hist)
+void print_hist(FILE* out_hist,int* hist, double range_start, double range_end)
 {
+	double bin_width=(double)(range_end-range_start)/N_bins;
 	for (int i = 0; i < N_bins; i++)
 	{
-		fprintf(out_hist,"%d\n",hist[i]);
+		fprintf(out_hist,"%.2lf %d\n",range_start+i*bin_width,hist[i]);
 	}
 }
 
-__global__ void histogram(double* d_traj, int* d_hist,double range_start,double range_end)//N_bins and N_spots also
+__global__ void histogram(double* d_traj, int* d_hist, double range_start, double range_end)//N_bins and N_spots also
 {
 	int id=threadIdx.x+blockIdx.x*blockDim.x;
 	int bin_i;
@@ -183,7 +184,7 @@ int main()
 	block.x=N_bins;
 	histogram<<<grid,block>>>(d_traj, d_hist, range_start,range_end);
 	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(int),cudaMemcpyDeviceToHost);
-	print_hist(out_hist,h_hist);
+	print_hist(out_hist,h_hist,range_start,range_end);
 		
 	free(h_traj);
 	cudaFree(d_traj);
