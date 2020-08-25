@@ -1,12 +1,16 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <cstdio>
+#include <climits>
 #include <curand.h>
 #include <curand_kernel.h>
 //#include "cuda_functions.h"
 using namespace std;
 
 #define N_spots 1024
+#define Traj_sample_period 100000 //it takes this time to evolve into new trajectory
+#define N_bins 512 //number of bins on x axis for histogram //not used yet
+#define hist_batch 512//how many points are classified simultaniously
 
 void print_traj(FILE* out_traj,double* traj)
 {
@@ -14,6 +18,30 @@ void print_traj(FILE* out_traj,double* traj)
     {
         fprintf(out_traj,"%lf\n",traj[i]);
     }    
+}
+
+void print_hist(FILE* out_hist,int* hist)
+{
+	for (int i = 0; i < N_bins; i++)
+	{
+		fprintf(out_hist,"%d\n",hist[i]);
+	}
+}
+
+__global__ void histogram(double* d_traj, int* d_hist,double range_start,double range_end)//N_bins and N_spots also
+{
+	int id=threadIdx.x+blockIdx.x*blockDim.x;
+	int bin_i;
+	__shared__ unsigned int hist[N_bins];
+	double bin_width=(double)(range_end-range_start)/N_bins;
+	hist[id]=0;
+	for(int i=0; i<N_spots/hist_batch; i++)
+	{
+		bin_i=int( (d_traj[id+i*hist_batch]-range_start)/bin_width );
+		//bin_i=hist[int( (d_traj[id+i*hist_batch]-range_start)/bin_width )];
+		atomicInc(&hist[bin_i],INT_MAX-1);
+	}
+	d_hist[id]+=hist[id];
 }
 
 __global__ void perform_sweeps(double* d_traj, double a, double omega,
@@ -73,8 +101,8 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega,
         x_old=traj[id];
         x_new=x_old+sigma*curand_normal_double(&rng_states[id]);
         B=(traj[(id-1+N_spots)%N_spots]+traj[(id+1+N_spots)%N_spots]);
-        S_old=1;//(A*x_old*x_old-B*x_old+C*x_old*x_old*x_old*x_old)/a;
-        S_new=1;//(A*x_new*x_new-B*x_new+C*x_new*x_new*x_new*x_new)/a;
+        S_old=(A*x_old*x_old-B*x_old+C*x_old*x_old*x_old*x_old)/a;
+        S_new=(A*x_new*x_new-B*x_new+C*x_new*x_new*x_new*x_new)/a;
         if (S_new < S_old)
 		{
 			traj_new[id]=x_new;
@@ -109,6 +137,8 @@ int main()
 	const double omega=7.0;
 	double bot=1.0;
 	double x0=bot;
+	const double range_start=-4.0;
+	const double range_end=4.0;
 
 	const int sigma_local_updates_period=2000;
 	const int sigma_sweeps_period=ceil((double)sigma_local_updates_period/N_spots);
@@ -123,11 +153,19 @@ int main()
 
 	FILE *out_traj;
 	out_traj=fopen("out_traj.txt","w");
+	FILE *out_hist;
+	out_hist=fopen("out_hist.txt","w");
 
 	double* h_traj;
 	h_traj=(double*)malloc(N_spots*sizeof(double));
 	double* d_traj;
 	cudaMalloc((void**)&d_traj, N_spots*sizeof(double));
+
+	int* h_hist;
+	h_hist=(int*)malloc(N_bins*sizeof(int));
+	int* d_hist;
+	cudaMalloc((void**)&d_hist, N_bins*sizeof(int));
+	cudaMemset(d_hist,0,N_bins*sizeof(int));
 
 	dim3 grid(1,1,1);
 	dim3 block(N_spots,1,1);
@@ -135,16 +173,22 @@ int main()
 	curandState *devStates;
     cudaMalloc((void**)&devStates, N_spots*sizeof(curandState));
 
-
+	//perform sweeps
 	perform_sweeps<<<grid,block>>>(d_traj, a, omega, bot, x0, sigma_coef, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, devStates);
-		cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-		
+	cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);	
 	print_traj(out_traj,h_traj);
+
+	//build histogram out of single trajectory //later it will run in cycle
+	block.x=N_bins;
+	histogram<<<grid,block>>>(d_traj, d_hist, range_start,range_end);
+	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(int),cudaMemcpyDeviceToHost);
+	print_hist(out_hist,h_hist);
 		
 	free(h_traj);
 	cudaFree(d_traj);
 	fclose(out_traj);
+	fclose(out_hist);
 		
 	//check for errors
 	cudaError_t err=cudaGetLastError();

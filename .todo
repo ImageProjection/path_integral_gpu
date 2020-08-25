@@ -1,5 +1,8 @@
 Plans:
--allow gigantic betas by using batches
+(for later)-allow gigantic betas by using batches
 loaded into shared memory from DRAM
 -add histogram functionality
+-в гистограме поменять кофигурацию запуска ядра гистограммы, чтобы отдельные блоки
+ обрабатывали разные участки траектории, пока этого нет, все делается одним блоком
+-превратить perform_sweeps в evolve, инициализацую траектории сделать отдельной
 
