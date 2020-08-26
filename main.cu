@@ -45,8 +45,8 @@ __global__ void histogram(double* d_traj, int* d_hist, double range_start, doubl
 	d_hist[id]+=hist[id];
 }
 
-__global__ void perform_sweeps(double* d_traj, double a, double omega,
-	double bot,double x0, double sigma_coef, int sigma_sweeps_period,
+__global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
+	double bot,double p0, double sigma_coef, int sigma_sweeps_period,
 	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps_waiting, curandState *rng_states)
 {
 	int id=threadIdx.x;// all threads must be in 1 block
@@ -56,14 +56,12 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega,
     __shared__ double sigma;
     __shared__ double acc_rate;
     __shared__ int accepted;//try register type or rely on L1 cache
-    double A=1.0-a*a*omega*omega*0.25;//try defferent memory types
     double B;
-    double C=a*a*omega*omega/(bot*bot)*0.125;
-	double x_old,x_new,S_old,S_new,prob_acc,gamma;
+	double p_old,p_new,S_old,S_new,prob_acc,gamma;
     
 	curand_init(id, id, 0, &rng_states[id]);
     //init trajectory
-    traj[id]=x0;
+    traj[id]=p0;
     accepted_tmp_st[id]=0;
     if (id==0)
     {
@@ -99,14 +97,14 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega,
 		}
 		__syncthreads();
         //local update for each
-        x_old=traj[id];
-        x_new=x_old+sigma*curand_normal_double(&rng_states[id]);
+        p_old=traj[id];	
+        p_new=p_old+sigma*curand_normal_double(&rng_states[id]);
         B=(traj[(id-1+N_spots)%N_spots]+traj[(id+1+N_spots)%N_spots]);
-        S_old=(A*x_old*x_old-B*x_old+C*x_old*x_old*x_old*x_old)/a;
-        S_new=(A*x_new*x_new-B*x_new+C*x_new*x_new*x_new*x_new)/a;
+        S_old=(p_old*p_old-p_old*B)/a + a*omega*sqrt((p_old*p_old-1)*(p_old*p_old-1)+e*e);
+        S_new=(p_new*p_new-p_new*B)/a + a*omega*sqrt((p_new*p_new-1)*(p_new*p_new-1)+e*e);
         if (S_new < S_old)
 		{
-			traj_new[id]=x_new;
+			traj_new[id]=p_new;
 			accepted_tmp_st[id]++;
 		}
 		else
@@ -115,7 +113,7 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega,
 			gamma=curand_uniform_double(&rng_states[id]);
 			if (gamma < prob_acc)
 			{
-				traj_new[id]=x_new;
+				traj_new[id]=p_new;
 				accepted_tmp_st[id]++;
 			}
 		}
@@ -135,9 +133,10 @@ int main()
 	const double a=0.035;
 	//const int N_spots=1024;
 	//double beta=a*N_spots;
-	const double omega=7.0;
+	const double omega=1.0;
+	const double e=0.0;
 	double bot=1.0;
-	double x0=bot;
+	double p0=bot;
 	const double range_start=-4.0;
 	const double range_end=4.0;
 
@@ -175,7 +174,7 @@ int main()
     cudaMalloc((void**)&devStates, N_spots*sizeof(curandState));
 
 	//perform sweeps
-	perform_sweeps<<<grid,block>>>(d_traj, a, omega, bot, x0, sigma_coef, sigma_sweeps_period,
+	perform_sweeps<<<grid,block>>>(d_traj, a, omega, e, bot, p0, sigma_coef, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, devStates);
 	cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);	
 	print_traj(out_traj,h_traj);
