@@ -40,7 +40,7 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 	{
 		hist[id+i*hist_batch]=0;
 	}
-	__syncthreads();//not needed?
+	__syncthreads();
 	//fill counters
 	for(int i=0; i<N_spots/hist_batch; i++)
 	{
