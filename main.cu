@@ -55,6 +55,8 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 	}
 }
 
+__global__ void init_kernel(double* d_traj,)
+
 __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 	double bot,double p0, double sigma_coef, int sigma_sweeps_period,
 	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps_waiting, curandState *rng_states)
@@ -63,14 +65,15 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
     __shared__ double traj[N_spots];
     __shared__ double traj_new[N_spots];
     __shared__ int accepted_tmp_st[N_spots];
-    __shared__ double sigma;
+    __shared__ double sigma;//will be dram, but cached immediately
     __shared__ double acc_rate;
     __shared__ int accepted;//try register type or rely on L1 cache
     double B;
 	double p_old,p_new,S_old,S_new,prob_acc,gamma;
     
 	curand_init(id, id, 0, &rng_states[id]);
-    //init trajectory
+	//init trajectory
+	////instead load data from dram
     traj[id]=p0;
     accepted_tmp_st[id]=0;
     if (id==0)
@@ -131,6 +134,7 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 		__syncthreads();
 		traj[id]=traj_new[id];
 	}
+	//load to dram from shared
 	d_traj[id]=traj[id];    
 }
 
@@ -143,7 +147,7 @@ int main()
 	const double a=0.035;
 	//const int N_spots=1024;
 	//double beta=a*N_spots;
-	const double omega=1.0;
+	const double omega=7.0;
 	const double e=0.0;
 	double bot=1.0;
 	double p0=bot;
