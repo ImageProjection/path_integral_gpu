@@ -33,16 +33,21 @@ __global__ void histogram(double* d_traj, int* d_hist, double range_start, doubl
 {
 	int id=threadIdx.x+blockIdx.x*blockDim.x;
 	int bin_i;
-	__shared__ unsigned int hist[N_bins];
+	__shared__ unsigned int hist[N_bins];//array of counters
 	double bin_width=(double)(range_end-range_start)/N_bins;
 	hist[id]=0;
 	for(int i=0; i<N_spots/hist_batch; i++)
 	{
 		bin_i=int( (d_traj[id+i*hist_batch]-range_start)/bin_width );
-		//bin_i=hist[int( (d_traj[id+i*hist_batch]-range_start)/bin_width )];
 		atomicInc(&hist[bin_i],INT_MAX-1);
 	}
-	d_hist[id]+=hist[id];
+	__syncthreads();
+	for(int j=0; j<N_bins/hist_batch; j++)
+	{
+		d_hist[id+j*hist_batch]+=hist[id+j*hist_batch];
+		__syncthreads();//not needed?
+	}
+	//d_hist[id]+=hist[id];
 }
 
 __global__ void perform_sweeps(double* d_traj, double a, double omega,
