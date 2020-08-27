@@ -9,7 +9,7 @@ using namespace std;
 
 #define N_spots 1024
 #define Traj_sample_period 100000 //it takes this time to evolve into new trajectory
-#define N_bins 512 //number of bins on x axis for histogram //not used yet
+#define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
 void print_traj(FILE* out_traj,double* traj)
@@ -20,7 +20,7 @@ void print_traj(FILE* out_traj,double* traj)
     }    
 }
 
-void print_hist(FILE* out_hist,int* hist, double range_start, double range_end)
+void print_hist(FILE* out_hist, unsigned int* hist, double range_start, double range_end)
 {
 	double bin_width=(double)(range_end-range_start)/N_bins;
 	for (int i = 0; i < N_bins; i++)
@@ -29,20 +29,30 @@ void print_hist(FILE* out_hist,int* hist, double range_start, double range_end)
 	}
 }
 
-__global__ void histogram(double* d_traj, int* d_hist, double range_start, double range_end)//N_bins and N_spots also
+__global__ void histogram(double* d_traj, unsigned int* d_hist, double range_start, double range_end)//N_bins and N_spots also
 {
-	int id=threadIdx.x+blockIdx.x*blockDim.x;
+	int id=threadIdx.x;
 	int bin_i;
-	__shared__ unsigned int hist[N_bins];
+	__shared__ unsigned int hist[N_bins];//array of counters
 	double bin_width=(double)(range_end-range_start)/N_bins;
-	hist[id]=0;
+	//init shmem
+	for(int i=0; i<N_bins/hist_batch; i++)
+	{
+		hist[id+i*hist_batch]=0;
+	}
+	__syncthreads();
+	//fill counters
 	for(int i=0; i<N_spots/hist_batch; i++)
 	{
 		bin_i=int( (d_traj[id+i*hist_batch]-range_start)/bin_width );
-		//bin_i=hist[int( (d_traj[id+i*hist_batch]-range_start)/bin_width )];
 		atomicInc(&hist[bin_i],INT_MAX-1);
 	}
-	d_hist[id]+=hist[id];
+	__syncthreads();
+	//move to dram
+	for(int i=0; i<N_bins/hist_batch; i++)
+	{
+		d_hist[id+i*hist_batch]+=hist[id+i*hist_batch];
+	}
 }
 
 __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
@@ -161,11 +171,11 @@ int main()
 	double* d_traj;
 	cudaMalloc((void**)&d_traj, N_spots*sizeof(double));
 
-	int* h_hist;
-	h_hist=(int*)malloc(N_bins*sizeof(int));
-	int* d_hist;
-	cudaMalloc((void**)&d_hist, N_bins*sizeof(int));
-	cudaMemset(d_hist,0,N_bins*sizeof(int));
+	unsigned int* h_hist;
+	h_hist=(unsigned int*)malloc(N_bins*sizeof(int));
+	unsigned int* d_hist;
+	cudaMalloc((void**)&d_hist, N_bins*sizeof(unsigned int));
+	cudaMemset(d_hist,0,N_bins*sizeof(unsigned int));
 
 	dim3 grid(1,1,1);
 	dim3 block(N_spots,1,1);
@@ -180,9 +190,9 @@ int main()
 	print_traj(out_traj,h_traj);
 
 	//build histogram out of single trajectory //later it will run in cycle
-	block.x=N_bins;
+	block.x=hist_batch;
 	histogram<<<grid,block>>>(d_traj, d_hist, range_start,range_end);
-	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(int),cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 	print_hist(out_hist,h_hist,range_start,range_end);
 		
 	free(h_traj);
@@ -196,6 +206,10 @@ int main()
 	{
 		printf("CUDA ERROR!!!\n");
 		printf("err code: %d\n",err);
+		if (err == 702)
+		{
+			printf("702 is similar to WDDM TDR false trigger; suggest running from tty3\n");
+		}
 	}
 	else
 	{
