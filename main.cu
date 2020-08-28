@@ -16,7 +16,7 @@ void print_traj(FILE* out_traj,double* traj)
 {
     for (int i = 0; i < N_spots; i++)
     {
-        fprintf(out_traj,"%lf\n",traj[i]);
+        fprintf(out_traj,"%d %lf\n", i, traj[i]);
     }    
 }
 
@@ -55,33 +55,45 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 	}
 }
 
-__global__ void init_kernel(double* d_traj,)
+__global__ void init_kernel(double* d_traj,double omega, double p0, int sigma_sweeps_period,
+	double acc_rate_up_border, double acc_rate_low_border, double* d_sigma, int* d_accepted, curandState *d_rng_states)
+{
+	int id=threadIdx.x;// all threads must be in 1 block
+	if (id==0)
+    {
+        *d_sigma=0.01*sqrt(0.5/omega);
+		*d_accepted=(sigma_sweeps_period*N_spots)*0.5*(acc_rate_low_border+acc_rate_up_border);//to not update on first sweep, when no data to eval acc_rate yet		
+    }
+	curand_init(id, id, 0, &d_rng_states[id]);
+	d_traj[id]=p0;
+}
 
 __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
-	double bot,double p0, double sigma_coef, int sigma_sweeps_period,
-	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps_waiting, curandState *rng_states)
+	double sigma_coef, int sigma_sweeps_period,
+	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps_waiting,
+	double* d_sigma, int* d_accepted, curandState *d_rng_states)
 {
 	int id=threadIdx.x;// all threads must be in 1 block
     __shared__ double traj[N_spots];
     __shared__ double traj_new[N_spots];
     __shared__ int accepted_tmp_st[N_spots];
-    __shared__ double sigma;//will be dram, but cached immediately
+    __shared__ double sigma;
     __shared__ double acc_rate;
     __shared__ int accepted;//try register type or rely on L1 cache
     double B;
 	double p_old,p_new,S_old,S_new,prob_acc,gamma;
     
-	curand_init(id, id, 0, &rng_states[id]);
+	//curand_init(id, id, 0, &d_rng_states[id]);
 	//init trajectory
 	////instead load data from dram
-    traj[id]=p0;
+    //traj[id]=p0;
     accepted_tmp_st[id]=0;
     if (id==0)
     {
-        sigma=0.01*sqrt(0.5/omega);
-		accepted=(sigma_sweeps_period*N_spots)*0.5*(acc_rate_low_border+acc_rate_up_border);//to not update on first sweep, when no data to eval acc_rate yet		
+        sigma=*d_sigma;
+		accepted=*d_accepted;
     }
-    __syncthreads();
+   __syncthreads();
     for (int sweeps_counter=0; sweeps_counter < N_sweeps_waiting; sweeps_counter++)
     {
         //update sigma
@@ -111,7 +123,7 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 		__syncthreads();
         //local update for each
         p_old=traj[id];	
-        p_new=p_old+sigma*curand_normal_double(&rng_states[id]);
+        p_new=p_old+sigma*curand_normal_double(&d_rng_states[id]);
         B=(traj[(id-1+N_spots)%N_spots]+traj[(id+1+N_spots)%N_spots]);
         S_old=(p_old*p_old-p_old*B)/a + a*omega*sqrt((p_old*p_old-1)*(p_old*p_old-1)+e*e);
         S_new=(p_new*p_new-p_new*B)/a + a*omega*sqrt((p_new*p_new-1)*(p_new*p_new-1)+e*e);
@@ -123,7 +135,7 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 		else
 		{
 			prob_acc=1.0/exp(S_new-S_old);
-			gamma=curand_uniform_double(&rng_states[id]);
+			gamma=curand_uniform_double(&d_rng_states[id]);
 			if (gamma < prob_acc)
 			{
 				traj_new[id]=p_new;
@@ -136,6 +148,11 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 	}
 	//load to dram from shared
 	d_traj[id]=traj[id];    
+	if (id==0)
+    {
+        *d_sigma=sigma;
+		*d_accepted=accepted;
+    }
 }
 
 int main()
@@ -165,31 +182,40 @@ int main()
 	printf("kernel timeout enabled: %d\n",
 	prop.kernelExecTimeoutEnabled);
 
+	//files
 	FILE *out_traj;
 	out_traj=fopen("out_traj.txt","w");
 	FILE *out_hist;
 	out_hist=fopen("out_hist.txt","w");
-
+	//trajectory
 	double* h_traj;
 	h_traj=(double*)malloc(N_spots*sizeof(double));
 	double* d_traj;
 	cudaMalloc((void**)&d_traj, N_spots*sizeof(double));
-
+	//histogram
 	unsigned int* h_hist;
 	h_hist=(unsigned int*)malloc(N_bins*sizeof(int));
 	unsigned int* d_hist;
 	cudaMalloc((void**)&d_hist, N_bins*sizeof(unsigned int));
 	cudaMemset(d_hist,0,N_bins*sizeof(unsigned int));
-
+	//"globals" kept between evolve calls
+	double* d_sigma;
+	cudaMalloc((void**)&d_sigma, sizeof(double));
+	int* d_accepted;
+	cudaMalloc((void**)&d_accepted, sizeof(int));	
+	curandState *d_rng_states;
+    cudaMalloc((void**)&d_rng_states, N_spots*sizeof(curandState));
+	
+	//kernel launch config
 	dim3 grid(1,1,1);
 	dim3 block(N_spots,1,1);
-	
-	curandState *devStates;
-    cudaMalloc((void**)&devStates, N_spots*sizeof(curandState));
 
+	//init kernel
+	init_kernel<<<grid,block>>>(d_traj, omega, p0, sigma_sweeps_period,
+		acc_rate_up_border, acc_rate_low_border, d_sigma, d_accepted, d_rng_states);
 	//perform sweeps
-	perform_sweeps<<<grid,block>>>(d_traj, a, omega, e, bot, p0, sigma_coef, sigma_sweeps_period,
-		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, devStates);
+	perform_sweeps<<<grid,block>>>(d_traj, a, omega, e, sigma_coef, sigma_sweeps_period,
+		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, d_sigma, d_accepted, d_rng_states);
 	cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);	
 	print_traj(out_traj,h_traj);
 
@@ -201,6 +227,10 @@ int main()
 		
 	free(h_traj);
 	cudaFree(d_traj);
+	cudaFree(d_hist);
+	cudaFree(d_sigma);
+	cudaFree(d_accepted);
+	cudaFree(d_rng_states);
 	fclose(out_traj);
 	fclose(out_hist);
 		
