@@ -32,12 +32,8 @@ void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, do
 int normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
 {
 	int n_points=0;
-	double integral=0;//==n_points*delta_x
+	double integral;//==n_points*delta_x
 	double bin_width=(double)(range_end-range_start)/N_bins;//delta_x
-	for(int i=0;i<N_bins;i++)
-	{
-		h_dens_plot[i]=0.0;
-	}
 	for(int i=0;i<N_bins;i++)
 	{
 		n_points+=h_hist[i];
@@ -45,7 +41,7 @@ int normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start
 	integral=n_points*bin_width;
 	for(int i=0;i<N_bins;i++)
 	{
-		h_dens_plot[i]/=integral;
+		h_dens_plot[i]=(double)h_hist[i]/integral;
 	}
 	return n_points;
 }
