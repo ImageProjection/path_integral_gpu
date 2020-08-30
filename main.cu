@@ -20,12 +20,12 @@ void print_traj(FILE* out_traj,double* traj)
     }    
 }
 
-void print_hist(FILE* out_hist, unsigned int* hist, double range_start, double range_end)
+void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, double range_end)
 {
 	double bin_width=(double)(range_end-range_start)/N_bins;
 	for (int i = 0; i < N_bins; i++)
 	{
-		fprintf(out_hist,"%.2lf %d\n",range_start+i*bin_width,hist[i]);
+		fprintf(out_dens_plot,"%.2lf %.8lf\n",range_start+i*bin_width,h_dens_plot[i]);
 	}
 }
 
@@ -203,8 +203,8 @@ int main()
 	//files
 	FILE *out_traj;
 	out_traj=fopen("out_traj.txt","w");
-	FILE *out_hist;
-	out_hist=fopen("out_hist.txt","w");
+	FILE *out_dens_plot;
+	out_dens_plot=fopen("out_dens_plot.txt","w");
 	//trajectory
 	double* h_traj;
 	h_traj=(double*)malloc(N_spots*sizeof(double));
@@ -256,7 +256,7 @@ int main()
 	//copy histogram, normalize, build
 	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 	normalize_hist(h_hist, h_dens_plot, range_start, range_end);
-	print_hist(out_hist,h_hist,range_start,range_end);
+	print_hist(out_dens_plot,h_dens_plot,range_start,range_end);
 		
 	free(h_traj);
 	free(h_dens_plot);
@@ -266,7 +266,7 @@ int main()
 	cudaFree(d_accepted);
 	cudaFree(d_rng_states);
 	fclose(out_traj);
-	fclose(out_hist);
+	fclose(out_dens_plot);
 		
 	//check for errors
 	cudaError_t err=cudaGetLastError();
