@@ -36,6 +36,10 @@ int normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start
 	double bin_width=(double)(range_end-range_start)/N_bins;//delta_x
 	for(int i=0;i<N_bins;i++)
 	{
+		h_dens_plot[i]=0.0;
+	}
+	for(int i=0;i<N_bins;i++)
+	{
 		n_points+=h_hist[i];
 	}
 	integral=n_points*bin_width;
