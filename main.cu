@@ -29,6 +29,23 @@ void print_hist(FILE* out_hist, unsigned int* hist, double range_start, double r
 	}
 }
 
+int normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
+{
+	int n_points=0;
+	double integral=0;//==n_points*delta_x
+	double bin_width=(double)(range_end-range_start)/N_bins;//delta_x
+	for(int i=0;i<N_bins;i++)
+	{
+		n_points+=h_hist[i];
+	}
+	integral=n_points*bin_width;
+	for(int i=0;i<N_bins;i++)
+	{
+		h_dens_plot[i]/=integral;
+	}
+	return n_points;
+}
+
 __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_start, double range_end)//N_bins and N_spots also
 {
 	int id=threadIdx.x;
@@ -196,6 +213,8 @@ int main()
 	//histogram
 	unsigned int* h_hist;
 	h_hist=(unsigned int*)malloc(N_bins*sizeof(int));
+	double* h_dens_plot;
+	h_dens_plot=(double*)malloc(N_bins*sizeof(double));
 	unsigned int* d_hist;
 	cudaMalloc((void**)&d_hist, N_bins*sizeof(unsigned int));
 	cudaMemset(d_hist,0,N_bins*sizeof(unsigned int));
@@ -236,10 +255,11 @@ int main()
 	print_traj(out_traj,h_traj);
 	//copy histogram, normalize, build
 	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
-	
+	normalize_hist(h_hist, h_dens_plot, range_start, range_end);
 	print_hist(out_hist,h_hist,range_start,range_end);
 		
 	free(h_traj);
+	free(h_dens_plot);
 	cudaFree(d_traj);
 	cudaFree(d_hist);
 	cudaFree(d_sigma);
