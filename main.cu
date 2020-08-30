@@ -160,7 +160,8 @@ int main()
     clock_t start,end;
 	start=clock();
 
-	const int N_sweeps_waiting=800000;
+	const int N_sweeps_waiting=800000;//initial termolisation
+	const int N_sample_trajectories=3;//this many traj-s is used to build histogram
 	const double a=0.035;
 	//const int N_spots=1024;
 	//double beta=a*N_spots;
@@ -207,22 +208,35 @@ int main()
     cudaMalloc((void**)&d_rng_states, N_spots*sizeof(curandState));
 	
 	//kernel launch config
-	dim3 grid(1,1,1);
-	dim3 block(N_spots,1,1);
+	dim3 grid_sweeps(1,1,1);
+	dim3 block_sweeps(N_spots,1,1);
+	dim3 grid_hist(1,1,1);
+	dim3 block_hist(hist_batch,1,1);
+	
 
 	//init kernel
-	init_kernel<<<grid,block>>>(d_traj, omega, p0, sigma_sweeps_period,
+	init_kernel<<<grid_sweeps,block_sweeps>>>(d_traj, omega, p0, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, d_sigma, d_accepted, d_rng_states);
-	//perform sweeps
-	perform_sweeps<<<grid,block>>>(d_traj, a, omega, e, sigma_coef, sigma_sweeps_period,
+	//termolise
+	perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_traj, a, omega, e, sigma_coef, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, d_sigma, d_accepted, d_rng_states);
+	//perform sweeps to build histogram
+	for (int i=0; i<N_sample_trajectories; i++)
+	{
+		//evolve
+		perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_traj, a, omega, e, sigma_coef, sigma_sweeps_period,
+			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
+		//add to cumulative histogram
+		histogram<<<grid_hist,block_hist>>>(d_traj, d_hist, range_start,range_end);
+	}
+
+
+	//build last trajectory
 	cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);	
 	print_traj(out_traj,h_traj);
-
-	//build histogram out of single trajectory //later it will run in cycle
-	block.x=hist_batch;
-	histogram<<<grid,block>>>(d_traj, d_hist, range_start,range_end);
+	//copy histogram, normalize, build
 	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+	
 	print_hist(out_hist,h_hist,range_start,range_end);
 		
 	free(h_traj);
