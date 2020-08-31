@@ -4,7 +4,6 @@
 #include <climits>
 #include <curand.h>
 #include <curand_kernel.h>
-//#include "cuda_functions.h"
 using namespace std;
 
 #define N_spots 1024
@@ -172,18 +171,17 @@ int main()
     clock_t start,end;
 	start=clock();
 
-	const int N_sweeps_waiting=800000;//initial termolisation
-	const int N_sample_trajectories=1;//this many traj-s is used to build histogram
-	const int Traj_sample_period=100000; //it takes this time to evolve into new trajectory
+	const int N_sweeps_waiting=800000;//initial termolisation length
+	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
+	const int Traj_sample_period=100000;//it takes this time to evolve into new trajectory
 	const double a=0.035;
-
-	//const int N_spots=1024;
-	//double beta=a*N_spots;
+	//const int N_spots=1024;//it's a define
+	double beta=a*N_spots;
 	const double omega=7.0;
 	const double e=0.0;
-	double bot=1.0;
+	double bot=1.0;//corresponds to 'bottom' of potential
 	double p0=bot;
-	const double range_start=-4.0;
+	const double range_start=-4.0;//for histogram
 	const double range_end=4.0;
 
 	const int sigma_local_updates_period=2000;
@@ -257,6 +255,7 @@ int main()
 		
 	free(h_traj);
 	free(h_dens_plot);
+	free(h_hist);
 	cudaFree(d_traj);
 	cudaFree(d_hist);
 	cudaFree(d_sigma);
@@ -275,12 +274,16 @@ int main()
 		{
 			printf("702 is similar to WDDM TDR false trigger; suggest running from tty3\n");
 		}
+		if (err == 700)
+		{
+			printf("700 is out of range call\n");
+		}
 	}
 	else
 	{
-		printf("CUDA OK!!!\n");
+		printf("No CUDA errors!!!\n");
 	}
 
     end=clock();
-	printf("TIME: %.2lf ms\n",(double)(end-start)/CLOCKS_PER_SEC*1000);
+	printf("TOTAL TIME: %.1lf seconds\n",(double)(end-start)/CLOCKS_PER_SEC);
 }
