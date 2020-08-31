@@ -1,3 +1,8 @@
+/*Program models the behaviour of a particle in Twin Peaks
+potential using Monte-Carlo methods. It produces 1 trajectory p(t)
+and a |\psi(p)|^2 graph. Computationally intensive code
+runs on GPU (programmed with CUDA).*/
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <cstdio>
@@ -189,6 +194,8 @@ int main()
 	const double sigma_coef=1.2;
 	const double acc_rate_up_border=0.3;
 	const double acc_rate_low_border=0.2;
+
+	printf("Particle in Twin Peaks potential\nbeta=%.2lf with a=%.4lf and N_spots=%d\nregularisation parameter e=%.2lf\ndensity plot resolution delta_x=%.5lf\n",beta,a,N_spots,e,(double)(range_end-range_start)/N_bins);
 
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
