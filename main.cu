@@ -177,7 +177,7 @@ int main()
 	start=clock();
 
 	const int N_sweeps_waiting=800000;//initial termolisation length
-	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=1;//this many traj-s are used to build histogram
 	const int Traj_sample_period=100000;//it takes this time to evolve into new trajectory
 	const double a=0.035;
 	//const int N_spots=1024;//it's a define
@@ -195,12 +195,15 @@ int main()
 	const double acc_rate_up_border=0.3;
 	const double acc_rate_low_border=0.2;
 
-	printf("Particle in Twin Peaks potential\nbeta=%.2lf with a=%.4lf and N_spots=%d\nregularisation parameter e=%.2lf\ndensity plot resolution delta_x=%.5lf\n",beta,a,N_spots,e,(double)(range_end-range_start)/N_bins);
+	printf("===Particle in Twin Peaks potential===\n");
+	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
+	printf("regularisation parameter e=%.2lf\n",e);
+	printf("density plot resolution delta_x=%.5lf\n",(double)(range_end-range_start)/N_bins);
+	printf("number of sample trajectories=%d\n",N_sample_trajectories);
 
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
-	printf("kernel timeout enabled: %d\n",
-	prop.kernelExecTimeoutEnabled);
+	printf("kernel timeout enabled: %d\n",prop.kernelExecTimeoutEnabled);
 
 	//files
 	FILE *out_traj;
@@ -270,7 +273,8 @@ int main()
 	cudaFree(d_rng_states);
 	fclose(out_traj);
 	fclose(out_dens_plot);
-		
+
+	printf("===launch status report===\n");
 	//check for errors
 	cudaError_t err=cudaGetLastError();
 	if (err != cudaSuccess)
@@ -291,6 +295,7 @@ int main()
 		printf("No CUDA errors!!!\n");
 	}
 
-    end=clock();
-	printf("TOTAL TIME: %.1lf seconds\n",(double)(end-start)/CLOCKS_PER_SEC);
+	end=clock();
+	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
+	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
 }
