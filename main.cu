@@ -8,7 +8,6 @@
 using namespace std;
 
 #define N_spots 1024
-#define Traj_sample_period 100000 //it takes this time to evolve into new trajectory
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
@@ -96,14 +95,10 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
     __shared__ int accepted_tmp_st[N_spots];
     __shared__ double sigma;
     __shared__ double acc_rate;
-    __shared__ int accepted;//try register type or rely on L1 cache
+    __shared__ int accepted;
     double B;
 	double p_old,p_new,S_old,S_new,prob_acc,gamma;
     
-	//curand_init(id, id, 0, &d_rng_states[id]);
-	//init trajectory
-	////instead load data from dram
-    //traj[id]=p0;
     accepted_tmp_st[id]=0;
     if (id==0)
     {
@@ -178,8 +173,10 @@ int main()
 	start=clock();
 
 	const int N_sweeps_waiting=800000;//initial termolisation
-	const int N_sample_trajectories=200;//this many traj-s is used to build histogram
+	const int N_sample_trajectories=1;//this many traj-s is used to build histogram
+	const int Traj_sample_period=100000; //it takes this time to evolve into new trajectory
 	const double a=0.035;
+
 	//const int N_spots=1024;
 	//double beta=a*N_spots;
 	const double omega=7.0;
