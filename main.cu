@@ -177,7 +177,7 @@ int main()
 	start=clock();
 
 	const int N_sweeps_waiting=800000;//initial termolisation length
-	const int N_sample_trajectories=1;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
 	const int Traj_sample_period=100000;//it takes this time to evolve into new trajectory
 	const double a=0.035;
 	//const int N_spots=1024;//it's a define
