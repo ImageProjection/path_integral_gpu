@@ -28,7 +28,7 @@ void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, do
 	double bin_width=(double)(range_end-range_start)/N_bins;
 	for (int i = 0; i < N_bins; i++)
 	{
-		fprintf(out_dens_plot,"%.8lf %.8lf\n",range_start+i*bin_width,h_dens_plot[i]);
+		fprintf(out_dens_plot,"%.8lf,%.8lf\n",range_start+i*bin_width,h_dens_plot[i]);
 	}
 }
 
