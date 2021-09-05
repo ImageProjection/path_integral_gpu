@@ -1,8 +1,11 @@
+compile:
+	nvcc -o main -arch=sm_35 main.cu
+
 compile_L1_on:
 	nvcc -o main -Xptxas -dlcm=ca main.cu
 
-compile:
-	nvcc -o main main.cu
+#compile:
+#	nvcc -o main main.cu
 
 run:
 	./main
