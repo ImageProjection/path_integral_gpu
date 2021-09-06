@@ -11,7 +11,7 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define N_spots 512
+#define N_spots 1024
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
