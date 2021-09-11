@@ -1,5 +1,5 @@
 compile:
-	nvcc -o main -arch=sm_35 main.cu
+	nvcc -Wno-deprecated-gpu-targets -o main -arch=sm_35 main.cu
 
 compile_L1_on:
 	nvcc -o main -Xptxas -dlcm=ca main.cu
@@ -9,6 +9,12 @@ compile_L1_on:
 
 run:
 	./main
+
+plot:
+	python3 plotter.py
+
+full_run:
+	nvcc -Wno-deprecated-gpu-targets -o main -arch=sm_35 main.cu && ./main && python3 plotter.py
 
 clean:
 	rm main && find . -name 'out*' -delete

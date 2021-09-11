@@ -182,9 +182,9 @@ int main()
     clock_t start,end;
 	start=clock();
 
-	const int N_sweeps_waiting=800000;//initial termolisation length (in sweeps)
+	const int N_sweeps_waiting=400000;//initial termolisation length (in sweeps)
 	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
-	const int Traj_sample_period=100000;//it takes this time to evolve into new trajectory
+	const int Traj_sample_period=50;//it takes this time to evolve into new trajectory
 	const double a=0.035;
 	//const int N_spots=1024;//it's a define
 	double beta=a*N_spots;
@@ -206,7 +206,9 @@ int main()
 	printf("regularisation parameter e=%.2lf\n",e);
 	printf("density plot resolution delta_x=%.5lf\n",(double)(range_end-range_start)/N_bins);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
-
+	printf("cuda traj build ETA estimate (seconds): %.1f\n",(N_sweeps_waiting+N_sample_trajectories*Traj_sample_period)*8.6/410000);
+	printf("subsequent python plotting ETA: %.1f\n",N_sample_trajectories*14.6/200);
+	printf("total estimated ETA: %.1f\n",(N_sweeps_waiting+N_sample_trajectories*Traj_sample_period)*8.6/410000+N_sample_trajectories*14.6/200);
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
 	printf("kernel timeout enabled: %d\n",prop.kernelExecTimeoutEnabled);
