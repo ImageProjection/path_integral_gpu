@@ -11,7 +11,7 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define N_spots 1024
+#define N_spots 512
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
@@ -183,16 +183,16 @@ int main()
     clock_t start,end;
 	start=clock();
 
-	const int N_sweeps_waiting=1;//initial termolisation length (in sweeps)
+	const int N_sweeps_waiting=100000;//initial termolisation length (in sweeps)
 	const int N_sample_trajectories=250;//this many traj-s are used to build histogram
-	const int Traj_sample_period=3;//it takes this time to evolve into new trajectory
-	const double a=0.035;
+	const int Traj_sample_period=100;//it takes this time to evolve into new trajectory //do not choose 1
+	const double a=0.035*2;
 	//const int N_spots=1024;//it's a define
 	double beta=a*N_spots;
 	const double omega=7.0;
 	const double e=0.0;
 	double bot=1.0;//corresponds to 'bottom' of potential
-	double p0=bot/2;
+	double p0=bot*2;
 	const double range_start=-4.0;//for histogram
 	const double range_end=4.0;
 
