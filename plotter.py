@@ -7,7 +7,7 @@ import time
 N_spots=512
 
 fig=plt.figure()
-ax1=fig.add_subplot(2,1,1)
+ax1=fig.add_subplot(1,1,1)
 
 def init():
     ax1.set_xlim([1,N_spots+1])

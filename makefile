@@ -13,6 +13,9 @@ run:
 plot:
 	python3 plotter.py
 
+histogram:
+	python3 hist_plotter.py
+
 full_run:
 	nvcc -Wno-deprecated-gpu-targets -o main -arch=sm_35 main.cu && ./main && python3 plotter.py
 
