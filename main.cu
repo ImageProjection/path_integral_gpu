@@ -15,12 +15,13 @@ using namespace std;
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
-void print_traj(FILE* out_traj,double* traj)
+void print_traj(FILE* out_traj,double* traj,double h_sigma)
 {
 	for (int i = 0; i < N_spots; i++)
 	{
 		fprintf(out_traj,"%.3lf ",traj[i]);
 	}
+	fprintf(out_traj,"%.6lf",h_sigma);
 	fprintf(out_traj,"\n");
     //for (int i = 0; i < N_spots; i++)
     //{
@@ -182,21 +183,21 @@ int main()
     clock_t start,end;
 	start=clock();
 
-	const int N_sweeps_waiting=40000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
-	const int Traj_sample_period=50;//it takes this time to evolve into new trajectory
+	const int N_sweeps_waiting=1;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=250;//this many traj-s are used to build histogram
+	const int Traj_sample_period=3;//it takes this time to evolve into new trajectory
 	const double a=0.035;
 	//const int N_spots=1024;//it's a define
 	double beta=a*N_spots;
 	const double omega=7.0;
 	const double e=0.0;
 	double bot=1.0;//corresponds to 'bottom' of potential
-	double p0=bot;
+	double p0=bot/2;
 	const double range_start=-4.0;//for histogram
 	const double range_end=4.0;
 
-	const int sigma_local_updates_period=2000;
-	const int sigma_sweeps_period=ceil((double)sigma_local_updates_period/N_spots);
+	//const int sigma_local_updates_period=2000;
+	const int sigma_sweeps_period=1;//ceil((double)sigma_local_updates_period/N_spots);
 	const double sigma_coef=1.2;
 	const double acc_rate_up_border=0.3;
 	const double acc_rate_low_border=0.2;
@@ -232,6 +233,7 @@ int main()
 	cudaMalloc((void**)&d_hist, N_bins*sizeof(unsigned int));
 	cudaMemset(d_hist,0,N_bins*sizeof(unsigned int));
 	//"globals" kept between evolve ("perform_sweeps" function) calls
+	double h_sigma;
 	double* d_sigma;
 	cudaMalloc((void**)&d_sigma, sizeof(double));
 	int* d_accepted;
@@ -260,9 +262,10 @@ int main()
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
 		//add to cumulative histogram
 		histogram<<<grid_hist,block_hist>>>(d_traj, d_hist, range_start,range_end);
-		//print traj
+		//print traj with appende sigma and acc_rate
+		cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
 		cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-		print_traj(out_traj,h_traj);
+		print_traj(out_traj,h_traj,h_sigma);
 	}
 
 

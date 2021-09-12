@@ -17,16 +17,16 @@ def init():
     line,=ax1.plot([],[],color="blue")
     return line,
 
-def upd(frame_i,sigma,acc_rate):
+def upd(frame_i):
     ax1.clear()
     ax1.set_xlim([1,N_spots+1])
     ax1.set_ylim([-4,4])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
+    sigma=dig_ar[frame_i][N_spots]
     my_xlabel=f"sample traj No={frame_i}\n"
-    my_xlabel+=f"sigma={sigma*frame_i}\n"
-    my_xlabel+=f"acc_rate={acc_rate}\n"
+    my_xlabel+=f"sigma={sigma}\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue")
     ax1.set_xlabel(my_xlabel,loc='left')
     return line,
@@ -40,14 +40,12 @@ for line in f:
     dig_ar.append(list(map(float,line.split())))
     n_lines+=1
 
-sigma=5.5
-acc_rate=10.222
-ani=animation.FuncAnimation(fig, upd, init_func=init,fargs=(sigma,acc_rate), interval=200,frames=n_lines, repeat=False, blit=0)
+ani=animation.FuncAnimation(fig, upd, init_func=init, interval=200,frames=n_lines, repeat=False, blit=0)
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-plt.show()
-#writervideo = animation.FFMpegWriter(fps=30)
-#ani.save('traj_evolution.mp4', writer=writervideo)
+#plt.show()
+writervideo = animation.FFMpegWriter(fps=4)
+ani.save('traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
 print("elapsed time plotting (seconds):",round(end_time-start_time,1))
