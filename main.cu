@@ -11,6 +11,7 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
+#define print_traj_flag 0
 #define N_spots 512
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
@@ -265,7 +266,10 @@ int main()
 		//print traj with appende sigma and acc_rate
 		cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
 		cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-		print_traj(out_traj,h_traj,h_sigma);
+		if (print_traj_flag)
+		{
+			print_traj(out_traj,h_traj,h_sigma);
+		}
 	}
 
 
