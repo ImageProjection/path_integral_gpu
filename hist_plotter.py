@@ -12,7 +12,7 @@ for line in f:
     x_data.append(tmp_list[0])
     y_data.append(tmp_list[1])
 
-plt.ylabel("|\psi(p)|^2")
+plt.ylabel("|P(x)|^2")
 plt.xlabel("coordinate")
 plt.plot(x_data,y_data)
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
