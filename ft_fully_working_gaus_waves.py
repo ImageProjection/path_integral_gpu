@@ -21,7 +21,7 @@ def sine_wave(f,overSampRate,phase,nCyl):
 	"""
 	fs = overSampRate*f # sampling frequency
 	t = np.arange(0,nCyl*1/f-1/fs,1/fs) # time base
-	g = np.sin(2*np.pi*f*t+phase) # replace with cos if a cosine wave is desired
+	g = np.sin(2*np.pi*f*t+phase) + np.cos(2*np.pi*f*5*t) # replace with cos if a cosine wave is desired
 	return (t,g) # return time base and signal g(t) as tuple
 
 
