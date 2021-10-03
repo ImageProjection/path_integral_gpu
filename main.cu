@@ -11,7 +11,7 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define print_traj_flag 0
+#define print_traj_flag 1
 #define N_spots 512
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
@@ -23,11 +23,7 @@ void print_traj(FILE* out_traj,double* traj,double h_sigma)
 		fprintf(out_traj,"%.3lf ",traj[i]);
 	}
 	fprintf(out_traj,"%.6lf",h_sigma);
-	fprintf(out_traj,"\n");
-    //for (int i = 0; i < N_spots; i++)
-    //{
-    //    fprintf(out_traj,"%d %lf\n", i, traj[i]);
-    //}    
+	fprintf(out_traj,"\n");  
 }
 
 void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, double range_end)
@@ -263,7 +259,7 @@ int main()
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
 		//add to cumulative histogram
 		histogram<<<grid_hist,block_hist>>>(d_traj, d_hist, range_start,range_end);
-		//print traj with appende sigma and acc_rate
+		//print traj with appended sigma and acc_rate
 		cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
 		cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 		if (print_traj_flag)
@@ -273,9 +269,6 @@ int main()
 	}
 
 
-	//	//build last trajectory
-	//	cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);	
-	//	print_traj(out_traj,h_traj);
 	//copy histogram, normalize, build
 	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 	normalize_hist(h_hist, h_dens_plot, range_start, range_end);
