@@ -31,10 +31,13 @@ ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 
 
 ax2=fig.add_subplot(2,1,2)
+ax2.set_xlabel("momentum p (units not to scale to anything)")
 ift_ydata=ifft(y_data)
 ift_xdata=np.linspace(-1,1,NFFT,endpoint=False)
-ax2.plot(ift_xdata[400:600],fftshift(ift_ydata)[400:600])
+#normalising
+ax2.plot(ift_xdata[512-60:512+60],fftshift(ift_ydata)[512-60:512+60])
 ax2.grid(color = 'green', linestyle = '--', linewidth = 0.5)
-plt.locator_params(nbins=40)
+plt.locator_params(nbins=20)
+plt.tight_layout()
+plt.savefig("histogram.png",bbox_inches='tight',dpi=350)
 plt.show()
-plt.savefig("histogram.png")
