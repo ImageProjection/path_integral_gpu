@@ -17,13 +17,18 @@ for line in f:
     x_data.append(tmp_list[0])
     y_data.append(tmp_list[1])
 
-
-#for testing
-'''it works for this gauss
+#'''
+#start of testing part
+#aprox the same shape, but smooth function
 y_data=np.zeros(NFFT)
-for i in range(250):
-    y_data[i]=norm.pdf((i-0)/20)
-'''
+fVals_half=np.zeros(NFFT//2)#amplitudes for each frequency
+fVals=np.zeros(NFFT)
+for i in range(NFFT//2):
+    fVals_half[i]=np.exp(-(i/120)**2)*(5*(i/120)**3+5*(i/120)**2+0.9)
+fVals=np.concatenate((fVals_half,np.flip(fVals_half)))
+y_data=fftshift(fVals)
+#end of "testing part"
+#'''
 ax1.set_ylabel("|P(x)|^2")
 ax1.set_xlabel("coordinate x")
 ax1.plot(x_data,y_data)
