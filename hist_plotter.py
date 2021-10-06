@@ -32,10 +32,11 @@ ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 
 ax2=fig.add_subplot(2,1,2)
 ax2.set_xlabel("momentum p (units not to scale to anything)")
+ax2.set_ylabel("~|P(p)|^2 (not normalised)")
 ift_ydata=ifft(y_data)
 ift_xdata=np.linspace(-1,1,NFFT,endpoint=False)
 #normalising
-ax2.plot(ift_xdata[512-60:512+60],fftshift(ift_ydata)[512-60:512+60])
+ax2.plot(ift_xdata[512-60:512+60],np.abs(fftshift(ift_ydata)[512-60:512+60]))
 ax2.grid(color = 'green', linestyle = '--', linewidth = 0.5)
 plt.locator_params(nbins=20)
 plt.tight_layout()
