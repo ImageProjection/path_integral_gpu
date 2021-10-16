@@ -1,6 +1,7 @@
-/*Program models the behaviour of a particle in Twin Peaks
-potential using Monte-Carlo methods. It produces 1 trajectory p(t)
-and a |\psi(p)|^2 graph. Computationally intensive code
+/*Program models the behaviour of a particle in smooth phi4-like 
+coordinate potential.
+It produces trajectories
+and a |\psi(x)|^2 graph. Computationally intensive code
 runs on GPU (programmed with CUDA).*/
 
 #include "cuda_runtime.h"
@@ -181,8 +182,8 @@ int main()
 	start=clock();
 
 	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=400000;//this many traj-s are used to build histogram
-	const int Traj_sample_period=500;//it takes this time to evolve into new trajectory //do not choose 1
+	const int N_sample_trajectories=1000;//this many traj-s are used to build histogram
+	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	//const int N_spots=1024;//it's a define
 	double beta=a*N_spots;
@@ -259,11 +260,11 @@ int main()
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
 		//add to cumulative histogram
 		histogram<<<grid_hist,block_hist>>>(d_traj, d_hist, range_start,range_end);
-		//print traj with appended sigma and acc_rate
-		cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
-		cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
+		//print traj with appended sigma
 		if (print_traj_flag)
 		{
+			cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
+			cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 			print_traj(out_traj,h_traj,h_sigma);
 		}
 	}

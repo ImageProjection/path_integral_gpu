@@ -17,7 +17,7 @@ for line in f:
     x_data.append(tmp_list[0])
     y_data.append(tmp_list[1])
 
-#'''
+'''
 #start of testing part
 #aprox the same shape, but smooth function
 y_data=np.zeros(NFFT)
@@ -28,7 +28,7 @@ for i in range(NFFT//2):
 fVals=np.concatenate((fVals_half,np.flip(fVals_half)))
 y_data=fftshift(fVals)
 #end of "testing part"
-#'''
+'''
 ax1.set_ylabel("|P(x)|^2")
 ax1.set_xlabel("coordinate x")
 ax1.plot(x_data,y_data)
