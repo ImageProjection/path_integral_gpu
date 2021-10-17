@@ -13,7 +13,7 @@ runs on GPU (programmed with CUDA).*/
 using namespace std;
 
 #define print_traj_flag 1
-#define N_spots 1024
+#define N_spots 512
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
@@ -103,7 +103,7 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
     __shared__ double sigma;//why shared? ans: all threads must have access to smae instant
     __shared__ double acc_rate;
     __shared__ int accepted;
-	double p_old,p_new,S_old,S_new,prob_acc,gamma;
+	double p_left_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
     
     accepted_tmp_st[id]=0;
 	//load variables kept between calls
@@ -113,6 +113,8 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		accepted=*d_accepted;
     }
    __syncthreads();
+   traj[id]=d_p_traj[id];
+   __syncthreads();//redundant remove later
     for (int sweeps_counter=0; sweeps_counter < N_sweeps; sweeps_counter++)
     {
         //update sigma
@@ -141,13 +143,12 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		}
 		__syncthreads();
         //local update for each
+		p_left_node=traj[(id-1+N_spots)%N_spots];
         p_old=traj[id];	
         p_new=p_old+sigma*curand_normal_double(&d_rng_states[id]);
-		S_old=-(p_old-traj[(id-1+N_spots)%N_spots])*(p_old-traj[(id-1+N_spots)%N_spots])/(2*a*a*m*omega*omega)
-			+v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
-        S_new=-(p_new-traj[(id-1+N_spots)%N_spots])*(p_new-traj[(id-1+N_spots)%N_spots])/(2*a*a*m*omega*omega)
-			+v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
-        if (S_new < S_old)
+		S_old=-(p_old-p_left_node)*(p_old-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+        S_new=-(p_new-p_left_node)*(p_new-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		if (S_new < S_old)
 		{
 			traj_new[id]=p_new;
 			accepted_tmp_st[id]++;
@@ -193,9 +194,9 @@ int main()
 	start=clock();
 	
 	//metropolis parameters
-	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
-	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
+	const int N_sweeps_waiting=30000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=2000;//this many traj-s are used to build histogram
+	const int Traj_sample_period=50;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
 
@@ -294,46 +295,45 @@ int main()
 	//run termolisation sweeps
 	perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, d_sigma, d_accepted, d_rng_states);
-
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
-		/*plan
+		//plan
 		//evolve p-trajectory
 		//evaluate x-trajectory from it on gpu with small 1 thread kernel
 		//add both trajectories data, add it to cumulative histograms
 		//if flag is set, print both trajectories to files
-		*/
 
 		//evolve p-trajectory
 		perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
 
 		//compute x-trajectory
-		cumulative_transform<<<grid_trans,block_trans>>>(d_p_traj,d_x_traj);
+		////cumulative_transform<<<grid_trans,block_trans>>>(d_p_traj,d_x_traj);
 
 		//add to cumulative histograms
-		histogram<<<grid_hist,block_hist>>>(d_p_traj, d_p_hist, p_range_start, p_range_end);
-		histogram<<<grid_hist,block_hist>>>(d_x_traj, d_x_hist, x_range_start, x_range_end);
+		histogram<<<grid_hist,block_hist>>>(d_p_traj, d_p_hist, p_range_start, p_range_end);//THIS IS DOING 700 (even on 512 spots)
+		////histogram<<<grid_hist,block_hist>>>(d_x_traj, d_x_hist, x_range_start, x_range_end);
 
 		//print trajectories with appended sigma
+		
 		if (print_traj_flag)
 		{
 			cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
 			cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-			cudaMemcpy(h_x_traj,d_x_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
+			////cudaMemcpy(h_x_traj,d_x_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 			print_traj(out_p_traj,h_p_traj,h_sigma);
-			print_traj(out_x_traj,h_x_traj,h_sigma);
+			////print_traj(out_x_traj,h_x_traj,h_sigma);
 		}
 	}
-
+	
 	//copy histogram, normalize, build
 	cudaMemcpy(h_p_hist,d_p_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_x_hist,d_x_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+	////cudaMemcpy(h_x_hist,d_x_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 	normalize_hist(h_p_hist, h_p_dens_plot, p_range_start, p_range_end);
-	normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
+	////normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
 	print_hist(out_p_dens_plot,h_p_dens_plot,p_range_start,p_range_end);
-	print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
+	////print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
 	
 	//free memory
 	free(h_p_traj);
@@ -379,4 +379,8 @@ int main()
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
+
+	//test printf
+	//double p_old=p_bottom;
+	//printf("S is of order=%.6lf\n",-(p_old-p_bottom*0.95)*(p_old-p_bottom*0.95)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  ));
 }

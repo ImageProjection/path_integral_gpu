@@ -7,7 +7,7 @@ from scipy.stats import norm
 
 fig=plt.figure()
 ax1=fig.add_subplot(2,1,1)
-f=open("out_dens_plot.txt",'r')
+f=open("out_p_dens_plot.txt",'r')
 x_data=[]
 y_data=[]
 NFFT=0
@@ -36,7 +36,7 @@ ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 
 
 ax2=fig.add_subplot(2,1,2)
-ax2.set_xlabel("momentum p (units not to scale to anything)")
+ax2.set_xlabel("momentum p (units not to scale to anything)")#todo change all labels
 ax2.set_ylabel("~|P(p)|^2 (not normalised)")
 ift_ydata=ifft(y_data)
 ift_xdata=np.linspace(-1,1,NFFT,endpoint=False)

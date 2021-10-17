@@ -34,7 +34,7 @@ def upd(frame_i):
 #main
 start_time=time.time()
 dig_ar=[]
-f=open("out_traj.txt",'r')
+f=open("out_p_traj.txt",'r')
 n_lines=0
 for line in f:
     dig_ar.append(list(map(float,line.split())))

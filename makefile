@@ -4,8 +4,8 @@ compile:
 compile_L1_on:
 	nvcc -o main -Xptxas -dlcm=ca main.cu
 
-#compile:
-#	nvcc -o main main.cu
+cr:
+	nvcc -Wno-deprecated-gpu-targets -o main -arch=sm_35 main.cu && ./main
 
 run:
 	./main
