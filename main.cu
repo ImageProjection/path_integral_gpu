@@ -13,7 +13,7 @@ runs on GPU (programmed with CUDA).*/
 using namespace std;
 
 #define print_traj_flag 0
-#define N_spots 512
+#define N_spots 1024
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
 
@@ -23,8 +23,7 @@ void print_traj(FILE* out_traj,double* traj,double h_sigma)
 	{
 		fprintf(out_traj,"%.3lf ",traj[i]);
 	}
-	fprintf(out_traj,"%.6lf",h_sigma);
-	fprintf(out_traj,"\n");  
+	fprintf(out_traj,"%.6lf\n",h_sigma);
 }
 
 void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, double range_end)
@@ -79,29 +78,29 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 	}
 }
 
-__global__ void init_kernel(double* d_traj,double omega, double p0, int sigma_sweeps_period,
+__global__ void init_kernel(double* d_p_traj,double omega, double p_initial, int sigma_sweeps_period,
 	double acc_rate_up_border, double acc_rate_low_border, double* d_sigma, int* d_accepted, curandState *d_rng_states)
 {
 	int id=threadIdx.x;// all threads must be in 1 block
 	if (id==0)
     {
-        *d_sigma=0.01*sqrt(0.5/omega);
+        *d_sigma=p_initial/3;
 		*d_accepted=(sigma_sweeps_period*N_spots)*0.5*(acc_rate_low_border+acc_rate_up_border);//to not update on first sweep, when no data to eval acc_rate yet		
     }
 	curand_init(id, id, 0, &d_rng_states[id]);
-	d_traj[id]=p0;
+	d_p_traj[id]=p_initial;
 }
 
-__global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
+__global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, double m, double omega, double p_bottom,
 	double sigma_coef, int sigma_sweeps_period,
-	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps_waiting,
+	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps,
 	double* d_sigma, int* d_accepted, curandState *d_rng_states)
 {
 	int id=threadIdx.x;// all threads must be in 1 block
     __shared__ double traj[N_spots];
     __shared__ double traj_new[N_spots];
     __shared__ int accepted_tmp_st[N_spots];
-    __shared__ double sigma;//TODO: why shared?
+    __shared__ double sigma;//why shared? ans: all threads must have access to smae instant
     __shared__ double acc_rate;
     __shared__ int accepted;
     double B;
@@ -115,7 +114,7 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 		accepted=*d_accepted;
     }
    __syncthreads();
-    for (int sweeps_counter=0; sweeps_counter < N_sweeps_waiting; sweeps_counter++)
+    for (int sweeps_counter=0; sweeps_counter < N_sweeps; sweeps_counter++)
     {
         //update sigma
         if ( (sweeps_counter % sigma_sweeps_period) == 0)
@@ -168,12 +167,24 @@ __global__ void perform_sweeps(double* d_traj, double a, double omega, double e,
 		traj[id]=traj_new[id];
 	}
 	//load to dram from shared
-	d_traj[id]=traj[id];    
+	d_p_traj[id]=traj[id];    
 	if (id==0)
     {
         *d_sigma=sigma;
 		*d_accepted=accepted;
     }
+}
+
+__global__ void cumulative_transform(double* d_p_traj, double* d_x_traj)
+{
+	d_x_traj[0]=0;
+	for (int j = 0; j < N_spots; j++)
+	{
+		for (int i = 0; i < j; i++)
+		{
+			d_x_traj[j]+=d_p_traj[i];
+		}		
+	}	
 }
 
 int main()
@@ -199,7 +210,7 @@ int main()
 	const double m=1.0;
 	const double omega=1.0;
 	const double p_bottom=1.0;//corresponds to 'bottom' of potential
-	const double p_initial=p_b;//starting momentum value
+	const double p_initial=p_bottom;//starting momentum value
 
 	//histogram parameters
 	const double x_range_start=-4.0;
@@ -233,7 +244,7 @@ int main()
 	FILE *out_x_dens_plot;
 	out_x_dens_plot=fopen("out_x_dens_plot.txt","w");
 	
-	//allocate memory for trajs on cpu and gpu
+	//allocate memory for p and x trajs on cpu and gpu
 	double* h_p_traj;
 	h_p_traj=(double*)malloc(N_spots*sizeof(double));
 	double* h_x_traj;
@@ -243,7 +254,7 @@ int main()
 	double* d_x_traj;
 	cudaMalloc((void**)&d_x_traj, N_spots*sizeof(double));
 
-	//allocate memory for histograms and density plots (normalised histograms) on cpu and gpu
+	//allocate memory for p and x histograms and density plots (normalised histograms) on cpu and gpu
 	unsigned int* h_p_hist;
 	h_p_hist=(unsigned int*)malloc(N_bins*sizeof(int));
 	unsigned int* h_x_hist;
@@ -259,7 +270,7 @@ int main()
 	cudaMalloc((void**)&d_x_hist, N_bins*sizeof(unsigned int));
 	cudaMemset(d_x_hist,0,N_bins*sizeof(unsigned int));
 
-	//variable preserved between perf_sweeps calls (only for p)
+	//variables preserved between perf_sweeps calls (only for p)
 	double h_sigma;
 	double* d_sigma;
 	cudaMalloc((void**)&d_sigma, sizeof(double));
@@ -268,56 +279,86 @@ int main()
 	curandState *d_rng_states;
     cudaMalloc((void**)&d_rng_states, N_spots*sizeof(curandState));
 	
-	//kernel launch config
+	//sweeps and histograms kernel launch config
 	dim3 grid_sweeps(1,1,1);
 	dim3 block_sweeps(N_spots,1,1);
-	dim3 grid_hist(1,1,1);
+	dim3 grid_hist(1,1,1);//same for x and p
 	dim3 block_hist(hist_batch,1,1);
-	
+	dim3 grid_trans(1,1,1);
+	dim3 block_trans(1,1,1);//only 1 thread, it's a small kernel
 
-	//init kernel
-	init_kernel<<<grid_sweeps,block_sweeps>>>(d_traj, omega, p0, sigma_sweeps_period,
+	//initialise p-trajectory, sigma, accepted and rng
+	init_kernel<<<grid_sweeps,block_sweeps>>>(d_p_traj, omega, p_initial, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, d_sigma, d_accepted, d_rng_states);
-	//termolise
-	perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_traj, a, omega, e, sigma_coef, sigma_sweeps_period,
+
+	//run termolisation sweeps
+	perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, d_sigma, d_accepted, d_rng_states);
-	//perform sweeps to build histogram
+
+	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
-		//evolve
-		perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_traj, a, omega, e, sigma_coef, sigma_sweeps_period,
+		/*plan
+		//evolve p-trajectory
+		//evaluate x-trajectory from it on gpu with small 1 thread kernel
+		//add both trajectories data, add it to cumulative histograms
+		//if flag is set, print both trajectories to files
+		*/
+
+		//evolve p-trajectory
+		perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
-		//add to cumulative histogram
-		histogram<<<grid_hist,block_hist>>>(d_traj, d_hist, range_start,range_end);
-		//print traj with appended sigma
+
+		//compute x-trajectory
+		cumulative_transform<<<grid_trans,block_trans>>>(d_p_traj,d_x_traj);
+
+		//add to cumulative histograms
+		histogram<<<grid_hist,block_hist>>>(d_p_traj, d_p_hist, p_range_start, p_range_end);
+		histogram<<<grid_hist,block_hist>>>(d_x_traj, d_x_hist, x_range_start, x_range_end);
+
+		//print trajectories with appended sigma
 		if (print_traj_flag)
 		{
 			cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
-			cudaMemcpy(h_traj,d_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-			print_traj(out_traj,h_traj,h_sigma);
+			cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
+			cudaMemcpy(h_x_traj,d_x_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
+			print_traj(out_p_traj,h_p_traj,h_sigma);
+			print_traj(out_x_traj,h_x_traj,h_sigma);
 		}
 	}
 
 
 	//copy histogram, normalize, build
-	cudaMemcpy(h_hist,d_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
-	normalize_hist(h_hist, h_dens_plot, range_start, range_end);
-	print_hist(out_dens_plot,h_dens_plot,range_start,range_end);
+	cudaMemcpy(h_p_hist,d_p_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_x_hist,d_x_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+	normalize_hist(h_p_hist, h_p_dens_plot, p_range_start, p_range_end);
+	normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
+	print_hist(out_p_dens_plot,h_p_dens_plot,p_range_start,p_range_end);
+	print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
 	
 	//free memory
-	free(h_traj);
-	free(h_dens_plot);
-	free(h_hist);
-	cudaFree(d_traj);
-	cudaFree(d_hist);
+	free(h_p_traj);
+	free(h_x_traj);
+	free(h_p_dens_plot);
+	free(h_x_dens_plot);
+	free(h_p_hist);
+	free(h_x_hist);
+	cudaFree(d_p_traj);
+	cudaFree(d_x_traj);
+	cudaFree(d_p_hist);
+	cudaFree(d_x_hist);
 	cudaFree(d_sigma);
 	cudaFree(d_accepted);
-	cudaFree(d_rng_states);
-	fclose(out_traj);
-	fclose(out_dens_plot);
+	cudaFree(d_rng_states);	
 
+	//close files
+	fclose(out_p_traj);
+	fclose(out_x_traj);
+	fclose(out_p_dens_plot);
+	fclose(out_x_dens_plot);
+
+	//check for errors and print report
 	printf("===launch status report===\n");
-	//check for errors
 	cudaError_t err=cudaGetLastError();
 	if (err != cudaSuccess)
 	{
@@ -336,7 +377,6 @@ int main()
 	{
 		printf("No CUDA errors!!!\n");
 	}
-
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
