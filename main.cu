@@ -180,31 +180,42 @@ int main()
 {
     clock_t start,end;
 	start=clock();
-
+	
+	//metropolis parameters
 	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
 	const int N_sample_trajectories=1000;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
-	//const int N_spots=1024;//it's a define
 	double beta=a*N_spots;
-	const double omega=7.0;
-	const double e=0.0;
-	double bot=1.0;//corresponds to 'bottom' of potential
-	double p0=bot*2;
-	const double range_start=-4.0;//for histogram
-	const double range_end=4.0;
 
-	//const int sigma_local_updates_period=2000;
-	const int sigma_sweeps_period=1;//ceil((double)sigma_local_updates_period/N_spots);
+	//sigma generation parameters for metropolis
+	const int sigma_sweeps_period=1;
 	const double sigma_coef=1.2;
 	const double acc_rate_up_border=0.3;
 	const double acc_rate_low_border=0.2;
 
-	printf("===Particle in Twin Peaks potential===\n");
+	//hamiltonian parameters
+	const double v_fermi=1.0;
+	const double m=1.0;
+	const double omega=1.0;
+	const double p_bottom=1.0;//corresponds to 'bottom' of potential
+	const double p_initial=p_b;//starting momentum value
+
+	//histogram parameters
+	const double x_range_start=-4.0;
+	const double x_range_end=4.0;
+	const double p_range_start=-4.0;
+	const double p_range_end=4.0;
+
+	//display parameters to terminal
+	printf("===Particle in (actual) Twin Peaks potential===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
-	printf("regularisation parameter e=%.2lf\n",e);
-	printf("density plot resolution delta_x=%.5lf\n",(double)(range_end-range_start)/N_bins);
+	printf("v_fermi=%.2lf\n",v_fermi);
+	printf("p_bottom=%.2lf",p_bottom);
+	printf("mass m=%.2lf",m);
+	printf("omega=%.2lf",omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
+	printf("Traj_sample_period=%d\n",Traj_sample_period);
 	printf("cuda traj build ETA estimate (seconds): %.1f\n",(N_sweeps_waiting+N_sample_trajectories*Traj_sample_period)*8.6/410000);
 	printf("subsequent python plotting ETA: %.1f\n",N_sample_trajectories*14.6/200);
 	printf("total estimated ETA: %.1f\n",(N_sweeps_waiting+N_sample_trajectories*Traj_sample_period)*8.6/410000+N_sample_trajectories*14.6/200);
@@ -212,25 +223,43 @@ int main()
 	cudaGetDeviceProperties(&prop, 0);
 	printf("kernel timeout enabled: %d\n",prop.kernelExecTimeoutEnabled);
 
-	//files
-	FILE *out_traj;
-	out_traj=fopen("out_traj.txt","w");
-	FILE *out_dens_plot;
-	out_dens_plot=fopen("out_dens_plot.txt","w");
-	//trajectory
-	double* h_traj;
-	h_traj=(double*)malloc(N_spots*sizeof(double));
-	double* d_traj;
-	cudaMalloc((void**)&d_traj, N_spots*sizeof(double));
-	//histogram
-	unsigned int* h_hist;
-	h_hist=(unsigned int*)malloc(N_bins*sizeof(int));
-	double* h_dens_plot;
-	h_dens_plot=(double*)malloc(N_bins*sizeof(double));
-	unsigned int* d_hist;
-	cudaMalloc((void**)&d_hist, N_bins*sizeof(unsigned int));
-	cudaMemset(d_hist,0,N_bins*sizeof(unsigned int));
-	//"globals" kept between evolve ("perform_sweeps" function) calls
+	//open files for output
+	FILE *out_p_traj;
+	out_p_traj=fopen("out_p_traj.txt","w");
+	FILE *out_p_dens_plot;
+	out_p_dens_plot=fopen("out_p_dens_plot.txt","w");
+	FILE *out_x_traj;
+	out_x_traj=fopen("out_x_traj.txt","w");
+	FILE *out_x_dens_plot;
+	out_x_dens_plot=fopen("out_x_dens_plot.txt","w");
+	
+	//allocate memory for trajs on cpu and gpu
+	double* h_p_traj;
+	h_p_traj=(double*)malloc(N_spots*sizeof(double));
+	double* h_x_traj;
+	h_x_traj=(double*)malloc(N_spots*sizeof(double));
+	double* d_p_traj;
+	cudaMalloc((void**)&d_p_traj, N_spots*sizeof(double));
+	double* d_x_traj;
+	cudaMalloc((void**)&d_x_traj, N_spots*sizeof(double));
+
+	//allocate memory for histograms and density plots (normalised histograms) on cpu and gpu
+	unsigned int* h_p_hist;
+	h_p_hist=(unsigned int*)malloc(N_bins*sizeof(int));
+	unsigned int* h_x_hist;
+	h_x_hist=(unsigned int*)malloc(N_bins*sizeof(int));
+	double* h_p_dens_plot;
+	h_p_dens_plot=(double*)malloc(N_bins*sizeof(double));
+	double* h_x_dens_plot;
+	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
+	unsigned int* d_p_hist;
+	cudaMalloc((void**)&d_p_hist, N_bins*sizeof(unsigned int));
+	cudaMemset(d_p_hist,0,N_bins*sizeof(unsigned int));
+	unsigned int* d_x_hist;
+	cudaMalloc((void**)&d_x_hist, N_bins*sizeof(unsigned int));
+	cudaMemset(d_x_hist,0,N_bins*sizeof(unsigned int));
+
+	//variable preserved between perf_sweeps calls (only for p)
 	double h_sigma;
 	double* d_sigma;
 	cudaMalloc((void**)&d_sigma, sizeof(double));
