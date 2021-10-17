@@ -12,7 +12,7 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define print_traj_flag 0
+#define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
 #define hist_batch 512//how many points are classified simultaniously
@@ -103,7 +103,6 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
     __shared__ double sigma;//why shared? ans: all threads must have access to smae instant
     __shared__ double acc_rate;
     __shared__ int accepted;
-    double B;
 	double p_old,p_new,S_old,S_new,prob_acc,gamma;
     
     accepted_tmp_st[id]=0;
@@ -144,9 +143,10 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
         //local update for each
         p_old=traj[id];	
         p_new=p_old+sigma*curand_normal_double(&d_rng_states[id]);
-        B=(traj[(id-1+N_spots)%N_spots]+traj[(id+1+N_spots)%N_spots]);
-        S_old=(p_old*p_old-p_old*B)/a + a*omega*sqrt((p_old*p_old-1)*(p_old*p_old-1)+e*e);
-        S_new=(p_new*p_new-p_new*B)/a + a*omega*sqrt((p_new*p_new-1)*(p_new*p_new-1)+e*e);
+		S_old=-(p_old-traj[(id-1+N_spots)%N_spots])*(p_old-traj[(id-1+N_spots)%N_spots])/(2*a*a*m*omega*omega)
+			+v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+        S_new=-(p_new-traj[(id-1+N_spots)%N_spots])*(p_new-traj[(id-1+N_spots)%N_spots])/(2*a*a*m*omega*omega)
+			+v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
         if (S_new < S_old)
 		{
 			traj_new[id]=p_new;
@@ -194,7 +194,7 @@ int main()
 	
 	//metropolis parameters
 	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=1000;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
@@ -206,9 +206,9 @@ int main()
 	const double acc_rate_low_border=0.2;
 
 	//hamiltonian parameters
-	const double v_fermi=1.0;
+	const double v_fermi=5.0;
 	const double m=1.0;
-	const double omega=1.0;
+	const double omega=20.0;
 	const double p_bottom=1.0;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value
 
@@ -222,9 +222,9 @@ int main()
 	printf("===Particle in (actual) Twin Peaks potential===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
 	printf("v_fermi=%.2lf\n",v_fermi);
-	printf("p_bottom=%.2lf",p_bottom);
-	printf("mass m=%.2lf",m);
-	printf("omega=%.2lf",omega);
+	printf("p_bottom=%.2lf\n",p_bottom);
+	printf("mass m=%.2lf\n",m);
+	printf("omega=%.2lf\n",omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
 	printf("Traj_sample_period=%d\n",Traj_sample_period);
 	printf("cuda traj build ETA estimate (seconds): %.1f\n",(N_sweeps_waiting+N_sample_trajectories*Traj_sample_period)*8.6/410000);
@@ -326,7 +326,6 @@ int main()
 			print_traj(out_x_traj,h_x_traj,h_sigma);
 		}
 	}
-
 
 	//copy histogram, normalize, build
 	cudaMemcpy(h_p_hist,d_p_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
