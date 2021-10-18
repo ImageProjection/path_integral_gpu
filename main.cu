@@ -12,10 +12,10 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define print_traj_flag 1
-#define N_spots 512
+#define print_traj_flag 0
+#define N_spots 1024
 #define N_bins 1024 //number of bins on x axis for histogram //not used yet
-#define hist_batch 512//how many points are classified simultaniously
+//#define hist_batch 512//how many points are classified simultaniously
 
 void print_traj(FILE* out_traj,double* traj,double h_sigma)
 {
@@ -52,8 +52,10 @@ int normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start
 	return n_points;
 }
 
+//hopefully this is not performance sensitive, because this is single threaded
 __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_start, double range_end)//N_bins and N_spots also
 {
+/*
 	int id=threadIdx.x;
 	int bin_i;
 	__shared__ unsigned int hist[N_bins];//array of counters
@@ -76,6 +78,40 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 	{
 		d_hist[id+i*hist_batch]+=hist[id+i*hist_batch];
 	}
+*/
+	////new revision
+	int id=threadIdx.x;
+	int bin_i;
+	__shared__ unsigned int hist[N_bins];
+	__shared__ int desired_inc[N_spots];//i-th element contains which bin i-th thread wants to increment
+	double bin_width=(double)(range_end-range_start)/N_bins;
+	//init shmem
+	for(int i=0; i<N_bins/N_spots; i++)
+	{
+		hist[id+i*N_spots]=0;
+	}
+	__syncthreads();
+	//fill counters
+	bin_i=int( (d_traj[id]-range_start)/bin_width );
+	desired_inc[id]=bin_i;
+	//atomicInc(&hist[bin_i],INT_MAX-1);maybe this is causing 700?
+	__syncthreads();
+	if (id==0)
+	{
+		for (int i = 0; i < N_spots; i++)
+		{
+			hist[desired_inc[i]]+=1;
+		}		
+	}
+	__syncthreads();
+	//move to dram
+	for(int i=0; i<N_bins/N_spots; i++)
+	{
+		d_hist[id+i*N_spots]+=hist[id+i*N_spots];
+	}
+	__syncthreads();
+
+	//TODO remove unnesessary synchs + maybe remove shared hist array
 }
 
 __global__ void init_kernel(double* d_p_traj,double omega, double p_initial, int sigma_sweeps_period,
@@ -284,7 +320,7 @@ int main()
 	dim3 grid_sweeps(1,1,1);
 	dim3 block_sweeps(N_spots,1,1);
 	dim3 grid_hist(1,1,1);//same for x and p
-	dim3 block_hist(hist_batch,1,1);
+	dim3 block_hist(N_spots,1,1);
 	dim3 grid_trans(1,1,1);
 	dim3 block_trans(1,1,1);//only 1 thread, it's a small kernel
 

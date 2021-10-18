@@ -4,4 +4,6 @@ out*
 a.out
 *mp4
 histogram.png
+p_histogram.png
 .vscode
+*.log
