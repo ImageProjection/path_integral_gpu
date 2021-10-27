@@ -39,5 +39,5 @@ ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 #display results
 plt.locator_params(nbins=20)
 plt.tight_layout()
-plt.savefig("cpu_p_histogram.png",bbox_inches='tight',dpi=350)
+plt.savefig("p_and_x_dens_plots.png",bbox_inches='tight',dpi=350)
 plt.show()

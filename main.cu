@@ -15,6 +15,7 @@ using namespace std;
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
+int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 void print_traj(FILE* out_traj,double* traj,double h_sigma)
 {
@@ -50,35 +51,23 @@ void normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_star
 	}
 }
 
-double max_abs(double* h_traj)
-{
-	double res=0;
-	double abs;
-	for (int i = 0; i < N_spots; i++)
-	{
-		abs=( (h_traj[i] >= 0) ? h_traj[i] : -h_traj[i]);
-		if (abs>res)
-		{
-			res=abs;
-		}		
-	}
-	return res;
-	
-}
 void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, double range_end)
 {
 	int bin_i;
 	double bin_width=double(range_end-range_start)/N_bins;
+	double abs;
 	for (int i = 0; i < N_spots; i++)
 	{
-		bin_i=int( (h_traj[i]-range_start)/bin_width );
-		/*
-		if ((bin_i<=0) || (bin_i>=N_bins))
+		abs= ( (h_traj[i] >= 0) ? h_traj[i] : -h_traj[i] );
+		if (abs < range_end)
 		{
-			printf("ERRRROR bin_i=%d,i=%d\n",bin_i,i);
+			bin_i=int( (h_traj[i]-range_start)/bin_width );
+			h_hist[bin_i]+=1;
 		}
-		*/
-		h_hist[bin_i]+=1;
+		else
+		{
+			discarded_x_points++;
+		}		
 	}	
 }
 
@@ -235,8 +224,8 @@ int main()
 	const double p_initial=p_bottom;//starting momentum value
 
 	//histogram parameters, will be updated
-	double p_range=4.0;
-	double x_range=p_range*(N_spots/2);
+	const double p_range=4.0;
+	const double x_range=175;//tweaked manually, values outside are discovered
 
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
@@ -328,23 +317,23 @@ int main()
 		h_cumulative_transform(h_p_traj,h_x_traj);
 
 		//add both trajectories points to cumulative histograms
-		h_histogram(h_p_traj, h_p_hist, -p_range,p_range);
-		////(**)TODO chenge ranges using maxmin h_histogram(h_x_traj, h_x_hist, x_range_start,x_range_end);
+		h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
+		h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
 
 		//print trajectories with appended sigma		
 		if (print_traj_flag)
 		{
 			cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
 			print_traj(out_p_traj,h_p_traj,h_sigma);
-			////(**)print_traj(out_x_traj,h_x_traj,h_sigma);
+			print_traj(out_x_traj,h_x_traj,h_sigma);
 		}
 	}
 	
 	//copy normalize and plot histogram to file
 	normalize_hist(h_p_hist, h_p_dens_plot, -p_range, p_range);
-	////(**)normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
+	normalize_hist(h_x_hist, h_x_dens_plot, -x_range, x_range);
 	print_hist(out_p_dens_plot,h_p_dens_plot,-p_range,p_range);
-	////(**)print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
+	print_hist(out_x_dens_plot,h_x_dens_plot,-x_range,x_range);
 	
 	//free memory
 	free(h_p_traj);
@@ -385,6 +374,8 @@ int main()
 	{
 		printf("No CUDA errors!!!\n");
 	}
+
+	printf("total number of discarded x points: %d (%.2lf%)\n",discarded_x_points,(double)discarded_x_points/(N_sample_trajectories*N_spots));
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
