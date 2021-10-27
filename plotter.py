@@ -5,13 +5,14 @@ import matplotlib.animation as animation
 import time
 
 N_spots=1024
+p_range=4
 
 fig=plt.figure()
 ax1=fig.add_subplot(1,1,1)
 
 def init():
     ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-4,4])
+    ax1.set_ylim([-p_range,p_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     line,=ax1.plot([],[],color="blue")
@@ -20,7 +21,7 @@ def init():
 def upd(frame_i):
     ax1.clear()
     ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-4,4])
+    ax1.set_ylim([-p_range,p_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
@@ -45,7 +46,7 @@ ani=animation.FuncAnimation(fig, upd, init_func=init, interval=200,frames=n_line
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 #plt.show()
 writervideo = animation.FFMpegWriter(fps=4)
-ani.save('traj_evolution.mp4', writer=writervideo)
+ani.save('p_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
 print("elapsed time plotting (seconds):",round(end_time-start_time,1))
