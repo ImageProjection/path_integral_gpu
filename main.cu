@@ -50,6 +50,21 @@ void normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_star
 	}
 }
 
+double max_abs(double* h_traj)
+{
+	double res=0;
+	double abs;
+	for (int i = 0; i < N_spots; i++)
+	{
+		abs=( (h_traj[i] >= 0) ? h_traj[i] : -h_traj[i]);
+		if (abs>res)
+		{
+			res=abs;
+		}		
+	}
+	return res;
+	
+}
 void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, double range_end)
 {
 	int bin_i;
@@ -219,11 +234,9 @@ int main()
 	const double p_bottom=1.0;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value
 
-	//histogram parameters
-	const double x_range_start=-4.0;
-	const double x_range_end=4.0;
-	const double p_range_start=-4.0;
-	const double p_range_end=4.0;
+	//histogram parameters, will be updated
+	double p_range=4.0;
+	double x_range=p_range*(N_spots/2);
 
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
@@ -298,7 +311,7 @@ int main()
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
-		//plan
+		//plan (old)
 		//evolve p-trajectory, copy it to host
 		//evaluate x-trajectory from it
 		//add both trajectories data to cumulative histograms
@@ -315,7 +328,7 @@ int main()
 		h_cumulative_transform(h_p_traj,h_x_traj);
 
 		//add both trajectories points to cumulative histograms
-		h_histogram(h_p_traj, h_p_hist, p_range_start,p_range_end);
+		h_histogram(h_p_traj, h_p_hist, -p_range,p_range);
 		////(**)TODO chenge ranges using maxmin h_histogram(h_x_traj, h_x_hist, x_range_start,x_range_end);
 
 		//print trajectories with appended sigma		
@@ -328,9 +341,9 @@ int main()
 	}
 	
 	//copy normalize and plot histogram to file
-	normalize_hist(h_p_hist, h_p_dens_plot, p_range_start, p_range_end);
+	normalize_hist(h_p_hist, h_p_dens_plot, -p_range, p_range);
 	////(**)normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
-	print_hist(out_p_dens_plot,h_p_dens_plot,p_range_start,p_range_end);
+	print_hist(out_p_dens_plot,h_p_dens_plot,-p_range,p_range);
 	////(**)print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
 	
 	//free memory

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
 
-N_spots=512
+N_spots=1024
 
 fig=plt.figure()
 ax1=fig.add_subplot(1,1,1)
