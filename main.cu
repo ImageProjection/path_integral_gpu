@@ -12,10 +12,9 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define print_traj_flag 0
+#define print_traj_flag 1
 #define N_spots 1024
-#define N_bins 1024 //number of bins on x axis for histogram //not used yet
-//#define hist_batch 512//how many points are classified simultaniously
+#define N_bins 1024
 
 void print_traj(FILE* out_traj,double* traj,double h_sigma)
 {
@@ -54,76 +53,37 @@ void normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_star
 void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, double range_end)
 {
 	int bin_i;
-	double bin_width=(double)(range_end-range_start)/N_bins;
+	double bin_width=double(range_end-range_start)/N_bins;
 	for (int i = 0; i < N_spots; i++)
 	{
 		bin_i=int( (h_traj[i]-range_start)/bin_width );
-		h_hist[bin_i]++;
+		/*
+		if ((bin_i<=0) || (bin_i>=N_bins))
+		{
+			printf("ERRRROR bin_i=%d,i=%d\n",bin_i,i);
+		}
+		*/
+		h_hist[bin_i]+=1;
 	}	
 }
-/*
-//hopefully this is not performance sensitive, because this is single threaded
-__global__ void histogram(double* d_traj, unsigned int* d_hist, double range_start, double range_end)//N_bins and N_spots also
+
+void h_cumulative_transform(double* h_p_traj, double* h_x_traj)
 {
-
-	int id=threadIdx.x;
-	int bin_i;
-	__shared__ unsigned int hist[N_bins];//array of counters
-	double bin_width=(double)(range_end-range_start)/N_bins;
-	//init shmem
-	for(int i=0; i<N_bins/hist_batch; i++)
+	//memset to 0
+	for (int k = 0; k < N_spots; k++)
 	{
-		hist[id+i*hist_batch]=0;
+		h_x_traj[k]=0;
 	}
-	__syncthreads();
-	//fill counters
-	for(int i=0; i<N_spots/hist_batch; i++)
+	//transform
+	for (int j = 1; j < N_spots; j++)
 	{
-		bin_i=int( (d_traj[id+i*hist_batch]-range_start)/bin_width );
-		atomicInc(&hist[bin_i],INT_MAX-1);
-	}
-	__syncthreads();
-	//move to dram
-	for(int i=0; i<N_bins/hist_batch; i++)
-	{
-		d_hist[id+i*hist_batch]+=hist[id+i*hist_batch];
-	}
-
-	////new revision
-	int id=threadIdx.x;
-	int bin_i;
-	__shared__ unsigned int hist[N_bins];
-	__shared__ int desired_inc[N_spots];//i-th element contains which bin i-th thread wants to increment
-	double bin_width=(double)(range_end-range_start)/N_bins;
-	//init shmem
-	for(int i=0; i<N_bins/N_spots; i++)
-	{
-		hist[id+i*N_spots]=0;
-	}
-	__syncthreads();
-	//fill counters
-	bin_i=int( (d_traj[id]-range_start)/bin_width );
-	desired_inc[id]=bin_i;
-	//atomicInc(&hist[bin_i],INT_MAX-1);maybe this is causing 700?
-	__syncthreads();
-	if (id==0)
-	{
-		for (int i = 0; i < N_spots; i++)
+		for (int i = 1; i <= j; i++)
 		{
-			hist[desired_inc[i]]+=1;
+			h_x_traj[j]+=h_p_traj[i];
 		}		
-	}
-	__syncthreads();
-	//move to dram
-	for(int i=0; i<N_bins/N_spots; i++)
-	{
-		d_hist[id+i*N_spots]+=hist[id+i*N_spots];
-	}
-	__syncthreads();
-
-	//TODO remove unnesessary synchs + maybe remove shared hist array
+	}	
 }
-*/
+
 __global__ void init_kernel(double* d_p_traj,double omega, double p_initial, int sigma_sweeps_period,
 	double acc_rate_up_border, double acc_rate_low_border, double* d_sigma, int* d_accepted, curandState *d_rng_states)
 {
@@ -241,7 +201,7 @@ int main()
 	
 	//metropolis parameters
 	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=500;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
@@ -266,7 +226,7 @@ int main()
 	const double p_range_end=4.0;
 
 	//display parameters to terminal
-	printf("===Particle in (actual) Twin Peaks potential===\n");
+	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
 	printf("v_fermi=%.2lf\n",v_fermi);
 	printf("p_bottom=%.2lf\n",p_bottom);
@@ -298,26 +258,22 @@ int main()
 	h_x_traj=(double*)malloc(N_spots*sizeof(double));
 	double* d_p_traj;
 	cudaMalloc((void**)&d_p_traj, N_spots*sizeof(double));
-	double* d_x_traj;
+	double* d_x_traj;//TODO remove
 	cudaMalloc((void**)&d_x_traj, N_spots*sizeof(double));
 
 	//allocate memory for p and x histograms and density plots (normalised histograms) on cpu and gpu
 	unsigned int* h_p_hist;
 	h_p_hist=(unsigned int*)malloc(N_bins*sizeof(int));
-	for(int i; i<N_bins; h_p_hist[i++]=0);
+	for(int i=0; i<N_bins; i++)
+		h_p_hist[i]=0;
 	unsigned int* h_x_hist;
 	h_x_hist=(unsigned int*)malloc(N_bins*sizeof(int));
-	for(int i; i<N_bins; h_x_hist[i++]=0);
+	for(int i=0; i<N_bins; i++)
+		h_x_hist[i]=0;
 	double* h_p_dens_plot;
 	h_p_dens_plot=(double*)malloc(N_bins*sizeof(double));
 	double* h_x_dens_plot;
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
-	unsigned int* d_p_hist;
-	cudaMalloc((void**)&d_p_hist, N_bins*sizeof(unsigned int));
-	cudaMemset(d_p_hist,0,N_bins*sizeof(unsigned int));
-	unsigned int* d_x_hist;
-	cudaMalloc((void**)&d_x_hist, N_bins*sizeof(unsigned int));
-	cudaMemset(d_x_hist,0,N_bins*sizeof(unsigned int));
 
 	//variables preserved between perf_sweeps calls (only for p)
 	double h_sigma;
@@ -331,10 +287,6 @@ int main()
 	//sweeps and histograms kernel launch config
 	dim3 grid_sweeps(1,1,1);
 	dim3 block_sweeps(N_spots,1,1);
-	dim3 grid_hist(1,1,1);//same for x and p
-	dim3 block_hist(N_spots,1,1);
-	dim3 grid_trans(1,1,1);
-	dim3 block_trans(1,1,1);//only 1 thread, it's a small kernel
 
 	//initialise p-trajectory, sigma, accepted and rng
 	init_kernel<<<grid_sweeps,block_sweeps>>>(d_p_traj, omega, p_initial, sigma_sweeps_period,
@@ -347,42 +299,39 @@ int main()
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//plan
-		//evolve p-trajectory
-		//evaluate x-trajectory from it on gpu with small 1 thread kernel
-		//add both trajectories data on cpu, add it to cumulative histograms
+		//evolve p-trajectory, copy it to host
+		//evaluate x-trajectory from it
+		//add both trajectories data to cumulative histograms
 		//if flag is set, print both trajectories to files
 
 		//evolve p-trajectory
 		perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
 
-		//compute x-trajectory
-		////cumulative_transform<<<grid_trans,block_trans>>>(d_p_traj,d_x_traj);
-
-		//add to cumulative histograms
+		//copy it to host
 		cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-		h_histogram(h_p_traj, h_p_hist, p_range_start,p_range_end);
-		////histogram<<<grid_hist,block_hist>>>(d_x_traj, d_x_hist, x_range_start, x_range_end);
 
-		//print trajectories with appended sigma
-		
+		//evaluate x-trajectory
+		h_cumulative_transform(h_p_traj,h_x_traj);
+
+		//add both trajectories points to cumulative histograms
+		h_histogram(h_p_traj, h_p_hist, p_range_start,p_range_end);
+		////(**)TODO chenge ranges using maxmin h_histogram(h_x_traj, h_x_hist, x_range_start,x_range_end);
+
+		//print trajectories with appended sigma		
 		if (print_traj_flag)
 		{
 			cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
-			//////cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
-			////cudaMemcpy(h_x_traj,d_x_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 			print_traj(out_p_traj,h_p_traj,h_sigma);
-			////print_traj(out_x_traj,h_x_traj,h_sigma);
+			////(**)print_traj(out_x_traj,h_x_traj,h_sigma);
 		}
 	}
 	
-	//copy histogram, normalize, build
-	//////cudaMemcpy(h_p_hist,d_p_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
-	////cudaMemcpy(h_x_hist,d_x_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+	//copy normalize and plot histogram to file
 	normalize_hist(h_p_hist, h_p_dens_plot, p_range_start, p_range_end);
-	////normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
+	////(**)normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
 	print_hist(out_p_dens_plot,h_p_dens_plot,p_range_start,p_range_end);
-	////print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
+	////(**)print_hist(out_x_dens_plot,h_x_dens_plot,x_range_start,x_range_end);
 	
 	//free memory
 	free(h_p_traj);
@@ -393,8 +342,6 @@ int main()
 	free(h_x_hist);
 	cudaFree(d_p_traj);
 	cudaFree(d_x_traj);
-	cudaFree(d_p_hist);
-	cudaFree(d_x_hist);
 	cudaFree(d_sigma);
 	cudaFree(d_accepted);
 	cudaFree(d_rng_states);	
@@ -428,8 +375,4 @@ int main()
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
-
-	//test printf
-	//double p_old=p_bottom;
-	//printf("S is of order=%.6lf\n",-(p_old-p_bottom*0.95)*(p_old-p_bottom*0.95)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  ));
 }
