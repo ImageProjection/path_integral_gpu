@@ -35,27 +35,37 @@ void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, do
 	}
 }
 
-int normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
+void normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
 {
-	int n_points=0;
-	double integral;//==n_points*delta_x
+	int val_sum=0;
+	double integral;//==val_sum*delta_x
 	double bin_width=(double)(range_end-range_start)/N_bins;//delta_x
 	for(int i=0;i<N_bins;i++)
 	{
-		n_points+=h_hist[i];
+		val_sum+=h_hist[i];
 	}
-	integral=n_points*bin_width;
+	integral=val_sum*bin_width;
 	for(int i=0;i<N_bins;i++)
 	{
 		h_dens_plot[i]=(double)h_hist[i]/integral;
 	}
-	return n_points;
 }
 
+void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, double range_end)
+{
+	int bin_i;
+	double bin_width=(double)(range_end-range_start)/N_bins;
+	for (int i = 0; i < N_spots; i++)
+	{
+		bin_i=int( (h_traj[i]-range_start)/bin_width );
+		h_hist[bin_i]++;
+	}	
+}
+/*
 //hopefully this is not performance sensitive, because this is single threaded
 __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_start, double range_end)//N_bins and N_spots also
 {
-/*
+
 	int id=threadIdx.x;
 	int bin_i;
 	__shared__ unsigned int hist[N_bins];//array of counters
@@ -78,7 +88,7 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 	{
 		d_hist[id+i*hist_batch]+=hist[id+i*hist_batch];
 	}
-*/
+
 	////new revision
 	int id=threadIdx.x;
 	int bin_i;
@@ -113,7 +123,7 @@ __global__ void histogram(double* d_traj, unsigned int* d_hist, double range_sta
 
 	//TODO remove unnesessary synchs + maybe remove shared hist array
 }
-
+*/
 __global__ void init_kernel(double* d_p_traj,double omega, double p_initial, int sigma_sweeps_period,
 	double acc_rate_up_border, double acc_rate_low_border, double* d_sigma, int* d_accepted, curandState *d_rng_states)
 {
@@ -230,9 +240,9 @@ int main()
 	start=clock();
 	
 	//metropolis parameters
-	const int N_sweeps_waiting=30000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=2000;//this many traj-s are used to build histogram
-	const int Traj_sample_period=50;//it takes this time to evolve into new trajectory //do not choose 1
+	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=500;//this many traj-s are used to build histogram
+	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
 
@@ -294,8 +304,10 @@ int main()
 	//allocate memory for p and x histograms and density plots (normalised histograms) on cpu and gpu
 	unsigned int* h_p_hist;
 	h_p_hist=(unsigned int*)malloc(N_bins*sizeof(int));
+	for(int i; i<N_bins; h_p_hist[i++]=0);
 	unsigned int* h_x_hist;
 	h_x_hist=(unsigned int*)malloc(N_bins*sizeof(int));
+	for(int i; i<N_bins; h_x_hist[i++]=0);
 	double* h_p_dens_plot;
 	h_p_dens_plot=(double*)malloc(N_bins*sizeof(double));
 	double* h_x_dens_plot;
@@ -337,7 +349,7 @@ int main()
 		//plan
 		//evolve p-trajectory
 		//evaluate x-trajectory from it on gpu with small 1 thread kernel
-		//add both trajectories data, add it to cumulative histograms
+		//add both trajectories data on cpu, add it to cumulative histograms
 		//if flag is set, print both trajectories to files
 
 		//evolve p-trajectory
@@ -348,7 +360,8 @@ int main()
 		////cumulative_transform<<<grid_trans,block_trans>>>(d_p_traj,d_x_traj);
 
 		//add to cumulative histograms
-		histogram<<<grid_hist,block_hist>>>(d_p_traj, d_p_hist, p_range_start, p_range_end);//THIS IS DOING 700 (even on 512 spots)
+		cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
+		h_histogram(h_p_traj, h_p_hist, p_range_start,p_range_end);
 		////histogram<<<grid_hist,block_hist>>>(d_x_traj, d_x_hist, x_range_start, x_range_end);
 
 		//print trajectories with appended sigma
@@ -356,7 +369,7 @@ int main()
 		if (print_traj_flag)
 		{
 			cudaMemcpy(&h_sigma,d_sigma,sizeof(double),cudaMemcpyDeviceToHost);
-			cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
+			//////cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 			////cudaMemcpy(h_x_traj,d_x_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 			print_traj(out_p_traj,h_p_traj,h_sigma);
 			////print_traj(out_x_traj,h_x_traj,h_sigma);
@@ -364,7 +377,7 @@ int main()
 	}
 	
 	//copy histogram, normalize, build
-	cudaMemcpy(h_p_hist,d_p_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
+	//////cudaMemcpy(h_p_hist,d_p_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 	////cudaMemcpy(h_x_hist,d_x_hist,N_bins*sizeof(unsigned int),cudaMemcpyDeviceToHost);
 	normalize_hist(h_p_hist, h_p_dens_plot, p_range_start, p_range_end);
 	////normalize_hist(h_x_hist, h_x_dens_plot, x_range_start, x_range_end);
