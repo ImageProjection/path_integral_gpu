@@ -28,7 +28,7 @@ def upd(frame_i):
     sigma=dig_ar[frame_i][N_spots]
     my_xlabel=f"sample traj No={frame_i}\n"
     my_xlabel+=f"sigma={sigma}\n"
-    line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue")
+    line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.3)
     ax1.set_xlabel(my_xlabel,loc='left')
     return line,
 

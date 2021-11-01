@@ -1,5 +1,4 @@
-/*Program models the behaviour of a particle in smooth phi4-like 
-coordinate potential.
+/*Program models the behaviour of a particle with Twin Peaks hamiltonian
 It produces trajectories
 and a |\psi(x)|^2 graph. Computationally intensive code
 runs on GPU (programmed with CUDA).*/
@@ -225,7 +224,7 @@ int main()
 
 	//histogram parameters, will be updated
 	const double p_range=4.0;
-	const double x_range=175;//tweaked manually, values outside are discovered
+	const double x_range=175;//tweaked manually, values outside are discarded
 
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
@@ -297,15 +296,10 @@ int main()
 	//run termolisation sweeps
 	perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, d_sigma, d_accepted, d_rng_states);
+	
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
-		//plan (old)
-		//evolve p-trajectory, copy it to host
-		//evaluate x-trajectory from it
-		//add both trajectories data to cumulative histograms
-		//if flag is set, print both trajectories to files
-
 		//evolve p-trajectory
 		perform_sweeps<<<grid_sweeps,block_sweeps>>>(d_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
 			acc_rate_up_border, acc_rate_low_border, Traj_sample_period, d_sigma, d_accepted, d_rng_states);
@@ -329,7 +323,7 @@ int main()
 		}
 	}
 	
-	//copy normalize and plot histogram to file
+	//copy, normalize and plot histograms to file
 	normalize_hist(h_p_hist, h_p_dens_plot, -p_range, p_range);
 	normalize_hist(h_x_hist, h_x_dens_plot, -x_range, x_range);
 	print_hist(out_p_dens_plot,h_p_dens_plot,-p_range,p_range);
@@ -375,7 +369,7 @@ int main()
 		printf("No CUDA errors!!!\n");
 	}
 
-	printf("total number of discarded x points: %d (%.2lf%)\n",discarded_x_points,(double)discarded_x_points/(N_sample_trajectories*N_spots));
+	printf("total number of histogram-discarded x points: %d (%.2lf%)\n",discarded_x_points,(double)discarded_x_points/(N_sample_trajectories*N_spots));
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);

@@ -16,7 +16,7 @@ for line in fp:
 
 ax1.set_ylabel("|P(p)|^2")
 ax1.set_xlabel("coordinate p")
-ax1.plot(x_data,y_data, color='red')
+ax1.plot(x_data,y_data, color='red',linewidth = 1.1)
 ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 
 
@@ -32,7 +32,7 @@ for line in fx:
 
 ax2.set_ylabel("|P(x)|^2")
 ax2.set_xlabel("coordinate x")
-ax2.plot(x_data,y_data, color='green')
+ax2.plot(x_data,y_data, color='green',linewidth = 1.1)
 ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 
 
