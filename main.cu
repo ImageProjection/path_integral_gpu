@@ -155,8 +155,8 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		p_left_node=traj[(id-1+N_spots)%N_spots];
         p_old=traj[id];	
         p_new=p_old+sigma*curand_normal_double(&d_rng_states[id]);
-		S_old=-(p_old-p_left_node)*(p_old-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
-        S_new=-(p_new-p_left_node)*(p_new-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		S_old=+(p_old-p_left_node)*(p_old-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+        S_new=+(p_new-p_left_node)*(p_new-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
 		if (S_new < S_old)
 		{
 			traj_new[id]=p_new;
@@ -203,8 +203,8 @@ int main()
 	start=clock();
 	
 	//metropolis parameters
-	const int N_sweeps_waiting=300000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
+	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=10;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
@@ -216,14 +216,14 @@ int main()
 	const double acc_rate_low_border=0.2;
 
 	//hamiltonian parameters
-	const double v_fermi=5.0;
-	const double m=1.0;
-	const double omega=20.0;
-	const double p_bottom=1.0;//corresponds to 'bottom' of potential
+	const double v_fermi=5;
+	const double m=0.05;
+	const double omega=50;
+	const double p_bottom=25;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value
 
 	//histogram parameters, will be updated
-	const double p_range=4.0;
+	const double p_range=30;
 	const double x_range=175;//tweaked manually, values outside are discarded
 
 	//display parameters to terminal
