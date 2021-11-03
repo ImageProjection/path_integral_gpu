@@ -11,7 +11,7 @@ runs on GPU (programmed with CUDA).*/
 #include <curand_kernel.h>
 using namespace std;
 
-#define print_traj_flag 1
+#define print_traj_flag 0
 #define N_spots 1024
 #define N_bins 1024
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
@@ -203,9 +203,9 @@ int main()
 	start=clock();
 	
 	//metropolis parameters
-	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=10;//this many traj-s are used to build histogram
-	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
+	const int N_sweeps_waiting=500000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=30000;//this many traj-s are used to build histogram
+	const int Traj_sample_period=500;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
 
@@ -216,14 +216,14 @@ int main()
 	const double acc_rate_low_border=0.2;
 
 	//hamiltonian parameters
-	const double v_fermi=5;
-	const double m=0.05;
-	const double omega=50;
-	const double p_bottom=25;//corresponds to 'bottom' of potential
+	const double v_fermi=500;
+	const double m=0.3;
+	const double omega=200;//200 is dense kinks
+	const double p_bottom=2;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value
 
 	//histogram parameters, will be updated
-	const double p_range=30;
+	const double p_range=5;
 	const double x_range=175;//tweaked manually, values outside are discarded
 
 	//display parameters to terminal
