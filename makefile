@@ -15,3 +15,7 @@ full_run:
 
 git_log:
 	git log --all --graph --decorate
+
+#force, remove folders with contents, remove ignored
+clean:
+	git clean -fdx

@@ -1,6 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.core.function_base import linspace
+from pathlib import Path
+
+#simulaton parameters
+values=[]
+spf=open("out_gen_des.txt",'r')
+for line in spf:
+    tmp_list=list(line.split(","))
+    values.append(float(tmp_list[1]))
+
+N_spots=round(values[0])
+N_sweeps_waiting=round(values[1])
+N_sample_trajectories=round(values[2])
+Traj_sample_period=round(values[3])
+a=values[4]
+beta=values[5]
+v_fermi=values[6]
+m=values[7]
+omega=values[8]
+p_bottom=values[9]
+p_range=values[10]
+x_range=values[11]
+
 
 
 fig=plt.figure()
@@ -39,5 +61,7 @@ ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 #display results
 plt.locator_params(nbins=20)
 plt.tight_layout()
-plt.savefig("p_and_x_dens_plots.png",bbox_inches='tight',dpi=350)
+
+Path("traj_hist").mkdir(exist_ok=True)
+plt.savefig(f"traj_hist/m={m}_p_and_x_dens_plots.png",bbox_inches='tight',dpi=350)
 #plt.show()

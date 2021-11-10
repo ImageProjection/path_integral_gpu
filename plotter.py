@@ -3,9 +3,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
+from pathlib import Path
 
-N_spots=1024
-p_range=5
+#simulaton parameters
+values=[]
+spf=open("out_gen_des.txt",'r')
+for line in spf:
+    tmp_list=list(line.split(","))
+    values.append(float(tmp_list[1]))
+
+N_spots=round(values[0])
+N_sweeps_waiting=round(values[1])
+N_sample_trajectories=round(values[2])
+Traj_sample_period=round(values[3])
+a=values[4]
+beta=values[5]
+v_fermi=values[6]
+m=values[7]
+omega=values[8]
+p_bottom=values[9]
+p_range=values[10]
+x_range=values[11]
+
+
 
 fig=plt.figure()
 ax1=fig.add_subplot(1,1,1)
@@ -47,7 +67,8 @@ ani=animation.FuncAnimation(fig, upd, init_func=init, interval=200,frames=50, re
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 #plt.show()
 writervideo = animation.FFMpegWriter(fps=4)
-ani.save('p_traj_evolution.mp4', writer=writervideo)
+Path("traj_mp4").mkdir(exist_ok=True)
+ani.save('traj_mp4/p_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
 print("elapsed time plotting (seconds):",round(end_time-start_time,1))

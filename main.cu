@@ -242,6 +242,8 @@ int main()
 	printf("kernel timeout enabled: %d\n",prop.kernelExecTimeoutEnabled);
 
 	//open files for output
+	FILE *out_gen_des;//lists simulation parameters
+	out_gen_des=fopen("out_gen_des.txt","w");
 	FILE *out_p_traj;
 	out_p_traj=fopen("out_p_traj.txt","w");
 	FILE *out_p_dens_plot;
@@ -250,6 +252,22 @@ int main()
 	out_x_traj=fopen("out_x_traj.txt","w");
 	FILE *out_x_dens_plot;
 	out_x_dens_plot=fopen("out_x_dens_plot.txt","w");
+
+	//print general simulation description to file
+	fprintf(out_gen_des,"N_spots,%d\n",N_spots);
+	fprintf(out_gen_des,"N_sweeps_waiting,%d\n",N_sweeps_waiting);
+	fprintf(out_gen_des,"N_sample_trajectories,%d\n",N_sample_trajectories);
+	fprintf(out_gen_des,"Traj_sample_period,%d\n",Traj_sample_period);
+	fprintf(out_gen_des,"a,%.4lf\n",a);
+	fprintf(out_gen_des,"beta,%.4lf\n",beta);
+	fprintf(out_gen_des,"v_fermi,%.4lf\n",v_fermi);
+	fprintf(out_gen_des,"m,%.4lf\n",m);
+	fprintf(out_gen_des,"omega,%.4lf\n",N_sweeps_waiting);
+	fprintf(out_gen_des,"p_bottom,%.4lf\n",p_bottom);
+	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
+	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
+
+	
 	
 	//allocate memory for p and x trajs on cpu and gpu
 	double* h_p_traj;
