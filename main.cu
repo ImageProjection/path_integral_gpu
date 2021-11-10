@@ -115,6 +115,7 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 	double p_left_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
     
     accepted_tmp_st[id]=0;
+    traj[id]=d_p_traj[id];
 	//load variables kept between calls
     if (id==0)
     {
@@ -122,8 +123,6 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		accepted=*d_accepted;
     }
    __syncthreads();
-   traj[id]=d_p_traj[id];
-   __syncthreads();//redundant remove later
     for (int sweeps_counter=0; sweeps_counter < N_sweeps; sweeps_counter++)
     {
         //update sigma
@@ -203,9 +202,9 @@ int main()
 	start=clock();
 	
 	//metropolis parameters
-	const int N_sweeps_waiting=100000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=10000;//this many traj-s are used to build histogram
-	const int Traj_sample_period=500;//it takes this time to evolve into new trajectory //do not choose 1
+	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=2300;//this many traj-s are used to build histogram
+	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
 
@@ -217,7 +216,7 @@ int main()
 
 	//hamiltonian parameters
 	const double v_fermi=500;
-	const double m=0.05;
+	const double m=0.3;
 	const double omega=200;//200 is dense kinks
 	const double p_bottom=2;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value

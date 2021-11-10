@@ -38,10 +38,10 @@ dig_ar=[]
 f=open("out_p_traj.txt",'r')
 n_lines=0
 for line in f:
-    if (n_lines<50):
-        dig_ar.append(list(map(float,line.split())))
+    dig_ar.append(list(map(float,line.split())))
     n_lines+=1
 
+dig_ar=dig_ar[n_lines-50:]
 ani=animation.FuncAnimation(fig, upd, init_func=init, interval=200,frames=50, repeat=False, blit=0)
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
