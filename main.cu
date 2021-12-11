@@ -126,7 +126,7 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
     __shared__ double sigma;//why shared? ans: all threads must have access to smae instant
     __shared__ double acc_rate;
     __shared__ int accepted;
-	double p_left_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
+	double p_left_node,p_right_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
     
     accepted_tmp_st[id]=0;
     traj[id]=d_p_traj[id];
@@ -166,10 +166,14 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		__syncthreads();
         //local update for each
 		p_left_node=traj[(id-1+N_spots)%N_spots];
+		p_right_node=traj[(id+1+N_spots)%N_spots];
         p_old=traj[id];	
         p_new=p_old+sigma*curand_normal_double(&d_rng_states[id]);
-		S_old=+(p_old-p_left_node)*(p_old-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
-        S_new=+(p_new-p_left_node)*(p_new-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		//S_old=+(p_old-p_left_node)*(p_old-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+        //S_new=+(p_new-p_left_node)*(p_new-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(2*a*m*omega*omega) + v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(2*a*m*omega*omega) + v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		
 		if (S_new < S_old)
 		{
 			traj_new[id]=p_new;
