@@ -2,7 +2,7 @@ main
 out*
 .nvvp
 a.out
-*mp4
+*.mp4
 histogram.png
 p_histogram.png
 *.png

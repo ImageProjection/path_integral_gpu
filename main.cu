@@ -216,7 +216,7 @@ int main()
 	start=clock();
 	//metropolis parameters
 	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=20000;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
@@ -228,8 +228,8 @@ int main()
 	const double acc_rate_low_border=0.2;
 
 	//hamiltonian parameters
-	const double v_fermi=500;
-	const double m=0.31;
+	const double v_fermi=50;
+	const double m=0.3;
 	const double omega=200;//200 is dense kinks
 	const double p_bottom=2;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value
