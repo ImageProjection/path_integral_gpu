@@ -84,7 +84,7 @@ void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, doubl
 	}	
 }
 
-void h_cumulative_transform(double* h_p_traj, double* h_x_traj)
+void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m)
 {
 	//memset to 0
 	for (int k = 0; k < N_spots; k++)
@@ -92,13 +92,20 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj)
 		h_x_traj[k]=0;
 	}
 	//transform
+	h_x_traj[0]=h_p_traj[0]*a/m;
+	for (int j = 1; j < N_spots; j++)
+	{
+		h_x_traj[j]=h_x_traj[j-1]+h_p_traj[j]*a/m;
+	}
+	/*
 	for (int j = 1; j < N_spots; j++)
 	{
 		for (int i = 1; i <= j; i++)
 		{
 			h_x_traj[j]+=h_p_traj[i];
 		}		
-	}	
+	}
+	*/	
 }
 
 __global__ void init_kernel(double* d_p_traj,double omega, double p_initial, int sigma_sweeps_period,
@@ -126,7 +133,7 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
     __shared__ double sigma;//why shared? ans: all threads must have access to smae instant
     __shared__ double acc_rate;
     __shared__ int accepted;
-	double p_left_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
+	double p_left_node,p_right_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
     
     accepted_tmp_st[id]=0;
     traj[id]=d_p_traj[id];
@@ -166,10 +173,12 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		__syncthreads();
         //local update for each
 		p_left_node=traj[(id-1+N_spots)%N_spots];
+		p_right_node=traj[(id+1+N_spots)%N_spots];
         p_old=traj[id];	
         p_new=p_old+sigma*curand_normal_double(&d_rng_states[id]);
-		S_old=+(p_old-p_left_node)*(p_old-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_old*p_old-p_bottom*p_bottom)*(p_old*p_old-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
-        S_new=+(p_new-p_left_node)*(p_new-p_left_node)/(2*a*a*m*omega*omega) +v_fermi*sqrt(  (p_new*p_new-p_bottom*p_bottom)*(p_new*p_new-p_bottom*p_bottom)/(4*p_bottom*p_bottom) + m*m*v_fermi*v_fermi  );
+		S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(a*m*omega*omega) + p_old*p_old/2/m;//sqrt(p_old*p_old+m*m);
+		S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(a*m*omega*omega) + p_new*p_new/2/m;//sqrt(p_new*p_new+m*m);
+
 		if (S_new < S_old)
 		{
 			traj_new[id]=p_new;
@@ -197,7 +206,7 @@ __global__ void perform_sweeps(double* d_p_traj, double a, double v_fermi, doubl
 		*d_accepted=accepted;
     }
 }
-
+/*
 __global__ void cumulative_transform(double* d_p_traj, double* d_x_traj)
 {
 	d_x_traj[0]=0;
@@ -209,6 +218,17 @@ __global__ void cumulative_transform(double* d_p_traj, double* d_x_traj)
 		}		
 	}	
 }
+*/
+
+double average_square(double* h_traj)
+{
+	double sum=0;
+	for (int i = 0; i < N_spots; i++)
+	{
+		sum+=h_traj[i]*h_traj[i];
+	}
+	return sum/N_spots;
+}
 
 int main()
 {
@@ -216,9 +236,9 @@ int main()
 	start=clock();
 	//metropolis parameters
 	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
-	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
-	const double a=0.035*2;
+	const int N_sample_trajectories=5000;//this many traj-s are used to build histogram
+	const int Traj_sample_period=500;//it takes this time to evolve into new trajectory //do not choose 1
+	const double a=1;//0.035*2;
 	double beta=a*N_spots;
 
 	//sigma generation parameters for metropolis
@@ -229,14 +249,14 @@ int main()
 
 	//hamiltonian parameters
 	const double v_fermi=50;
-	const double m=0.3;
-	const double omega=200;//200 is dense kinks
+	const double m=100;
+	const double omega=1;//200 is dense kinks
 	const double p_bottom=2;//corresponds to 'bottom' of potential
 	const double p_initial=p_bottom;//starting momentum value
 
 	//histogram parameters, will be updated
-	const double p_range=5;
-	const double x_range=175;//tweaked manually, values outside are discarded
+	const double p_range=20;
+	const double x_range=20;//tweaked manually, values outside are discarded
 
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
@@ -257,6 +277,9 @@ int main()
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
 	out_gen_des=fopen("out_gen_des.txt","w");
+	FILE *out_energies;
+	out_energies=fopen("out_energies.txt","w");
+	double aver_T,aver_V;
 	FILE *out_p_traj;
 	out_p_traj=fopen("out_p_traj.txt","w");
 	FILE *out_p_dens_plot;
@@ -338,7 +361,7 @@ int main()
 		cudaMemcpy(h_p_traj,d_p_traj,N_spots*sizeof(double),cudaMemcpyDeviceToHost);
 
 		//evaluate x-trajectory
-		h_cumulative_transform(h_p_traj,h_x_traj);
+		h_cumulative_transform(h_p_traj,h_x_traj,a,m);
 
 		//add both trajectories points to cumulative histograms
 		h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
@@ -351,6 +374,11 @@ int main()
 			print_traj(out_p_traj,h_p_traj,h_sigma);
 			print_traj(out_x_traj,h_x_traj,h_sigma);
 		}
+
+		//evaluate energies corresponding to each trajectory
+		aver_T=average_square(h_p_traj)/(2*m);
+		aver_V=average_square(h_x_traj)*(m*omega*omega/2);
+		fprintf(out_energies,"%.3lf, %.3lf, %.3lf\n",aver_T,aver_V,omega/4);
 	}
 	
 	//copy, normalize and plot histograms to file
