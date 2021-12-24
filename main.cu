@@ -236,7 +236,7 @@ int main()
 	start=clock();
 	//metropolis parameters
 	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=5000;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=500;//this many traj-s are used to build histogram
 	const int Traj_sample_period=500;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=1;//0.035*2;
 	double beta=a*N_spots;
