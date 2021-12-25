@@ -1,7 +1,6 @@
 /*Program models the behaviour of a particle with Twin Peaks hamiltonian
 It produces trajectories
-and a |\psi(x)|^2 graph. Computationally intensive code
-runs on GPU (programmed with CUDA).*/
+and a |\psi(x)|^2 graph.*/
 
 //#include "cuda_runtime.h"
 //#include "device_launch_parameters.h"
