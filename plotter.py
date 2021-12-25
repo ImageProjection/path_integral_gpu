@@ -71,27 +71,5 @@ Path("traj_mp4").mkdir(exist_ok=True)
 ani.save('traj_mp4/p_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
-print("elapsed time plotting p (seconds):",round(end_time-start_time,1))
-
-
-#main for x
-start_time=time.time()
-dig_ar=[]
-f=open("out_x_traj.txt",'r')
-n_lines=0
-for line in f:
-    dig_ar.append(list(map(float,line.split())))
-    n_lines+=1
-
-dig_ar=dig_ar[n_lines-50:]
-ani=animation.FuncAnimation(fig, upd, init_func=init, interval=200,frames=50, repeat=False, blit=0)
-
-plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-#plt.show()
-writervideo = animation.FFMpegWriter(fps=4)
-Path("traj_mp4").mkdir(exist_ok=True)
-ani.save('traj_mp4/x_traj_evolution.mp4', writer=writervideo)
-f.close()
-end_time=time.time()
-print("elapsed time plotting x (seconds):",round(end_time-start_time,1))
+print("elapsed time plotting (seconds):",round(end_time-start_time,1))
 
