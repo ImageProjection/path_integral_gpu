@@ -7,8 +7,9 @@ and a |\psi(x)|^2 graph.*/
 //#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include <climits>
 #include <time.h>
+#include <math.h>
+
 //using namespace std;
 
 #define print_traj_flag 1
@@ -16,16 +17,29 @@ and a |\psi(x)|^2 graph.*/
 #define N_bins 1024
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
-int my_floor(double x)//because c floor returns double //make a ternary thing
+struct hamiltonian_params_container
 {
-	if(x>=0)
-	{
-		return int(x);
-	}
-	else
-	{
-		return int(x-1);
-	}
+	double v_fermi;
+	double m;
+	double omega;
+	double p_bottom;
+	double a;
+};
+struct metrop_params_container
+{
+	int sigma_sweeps_period;
+	double sigma_coef;
+	double acc_rate_up_border;
+	double acc_rate_low_border;
+	double p_initial;
+};
+
+double my_normal_double()
+{
+	double g1,g2;
+	g1=random();
+	g2=random();
+	return sqrt(-2*log(g2))*sin(2*M_PI*g1);
 }
 
 void print_traj(FILE* out_traj,double* traj,double h_sigma)
@@ -72,7 +86,7 @@ void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, doubl
 		abs= ( (h_traj[i] >= 0) ? h_traj[i] : -h_traj[i] );
 		if (abs < range_end)
 		{
-			bin_i=my_floor( (h_traj[i]-range_start)/bin_width );
+			bin_i=floor( (h_traj[i]-range_start)/bin_width );
 			h_hist[bin_i]+=1;
 		}
 		else
@@ -106,81 +120,66 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m
 	*/	
 }
 
-void perform_sweeps(double* h_p_traj, double a, double v_fermi, double m, double omega, double p_bottom,
-	double sigma_coef, int sigma_sweeps_period,
-	double acc_rate_up_border, double acc_rate_low_border, int N_sweeps,
-	double* h_sigma, int* h_accepted)
-{
-    double acc_rate;
-    double intern_sigma;
-    int intern_accepted;
+double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
+	struct hamiltonian_params_container ham_params,
+	struct metrop_params_container met_params)//h_p_traj_new is purely for internal usage,
+{										 //but is allocated outside since it's 1 time	
+    static double acc_rate;
+    static double sigma=met_params.p_initial/3;
+    static int accepted=(met_params.sigma_sweeps_period*N_spots)*
+		0.5*(met_params.acc_rate_low_border+met_params.acc_rate_up_border);
+	
 	double p_left_node,p_right_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
     
-	//load variables kept between calls
-    intern_sigma=*d_sigma;//switch over to static
-	intern_accepted=*h_accepted;
     for (int sweeps_counter=0; sweeps_counter < N_sweeps; sweeps_counter++)
     {
         //update sigma
-        if ( (sweeps_counter % sigma_sweeps_period) == 0)
+        if ( (sweeps_counter % met_params.sigma_sweeps_period) == 0)
 		{   
-            /*      
-			for(int ps=N_spots/2; ps>=1; ps/=2)
+			acc_rate=(double)accepted/(met_params.sigma_sweeps_period*N_spots);
+			accepted=0;
+			if (acc_rate < met_params.acc_rate_low_border)
 			{
-				if(id<ps)
-					accepted_tmp_st[id]+=accepted_tmp_st[id+ps];
-				__syncthreads();
+				sigma/=met_params.sigma_coef;
 			}
-			accepted=accepted_tmp_st[0];
-            */
-			acc_rate=(double)accepted/(sigma_sweeps_period*N_spots);
-			if (acc_rate < acc_rate_low_border)
+			if (acc_rate > met_params.acc_rate_up_border)
 			{
-				sigma=sigma/sigma_coef;
-			}
-			if (acc_rate > acc_rate_up_border)
-			{
-				sigma=sigma*sigma_coef;
+				sigma*=met_params.sigma_coef;
 			}
 		}
-        //local update for each
-		p_left_node=h_p_traj[(id-1+N_spots)%N_spots];
-		p_right_node=h_p_traj[(id+1+N_spots)%N_spots];
-        p_old=h_p_traj[id];	
-        p_new=p_old+sigma*my_normal_double();
-		S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(a*m*omega*omega) + p_old*p_old/2/m;//sqrt(p_old*p_old+m*m);
-		S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(a*m*omega*omega) + p_new*p_new/2/m;//sqrt(p_new*p_new+m*m);
+        //local update for each, write into new traj
+		for (int i = 0; i < N_spots; i++)
+		{
+			p_left_node=h_p_traj[(i-1+N_spots)%N_spots];
+			p_right_node=h_p_traj[(i+1+N_spots)%N_spots];
+        	p_old=h_p_traj[i];	
+        	p_new=p_old+sigma*my_normal_double();
+			S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_old*p_old/2/ham_params.m;//sqrt(p_old*p_old+m*m);
+			S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_new*p_new/2/ham_params.m;//sqrt(p_new*p_new+m*m);
 
-		if (S_new < S_old)
-		{
-			h_p_traj_new[id]=p_new;
-			intern_accepted_tmp_st++;
-		}
-		else
-		{
-			prob_acc=1.0/exp(S_new-S_old);
-			gamma=my_uniform_double();
-			if (gamma < prob_acc)
+			if (S_new < S_old)
 			{
-				h_p_traj_new[id]=p_new;
-				intern_accepted++;
+				h_p_traj_new[i]=p_new;
+				accepted++;
+			}
+			else
+			{
+				prob_acc=1.0/exp(S_new-S_old);
+				gamma=random();
+				if (gamma < prob_acc)
+				{
+					h_p_traj_new[i]=p_new;
+					accepted++;
+				}
 			}
 		}
 		//new -> old
-        for (int k = 0; k < N_spots; k++)//do i even need old and new?
+        for (int k = 0; k < N_spots; k++)
         {
             h_p_traj[k]=h_p_traj_new[k];
         }
-        
-		traj[id]=traj_new[id];
 	}
-	//load to dram from shared
-	d_p_traj[id]=traj[id];    
-	if (id==0)
-    {
-        *d_sigma=sigma;
-		*d_accepted=accepted;
-    }
+	return sigma;
 }
 
 double average_square(double* h_traj)
@@ -195,27 +194,31 @@ double average_square(double* h_traj)
 
 int main()
 {
+	srand(time(NULL));
     clock_t start,end;
 	start=clock();
-	//metropolis parameters
-	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=500;//this many traj-s are used to build histogram
-	const int Traj_sample_period=500;//it takes this time to evolve into new trajectory //do not choose 1
+	//termo parameters
+	const int N_sweeps_waiting=10000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
+	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=1;//0.035*2;
 	double beta=a*N_spots;
 
-	//sigma generation parameters for metropolis
-	const int sigma_sweeps_period=1;
-	const double sigma_coef=1.2;
-	const double acc_rate_up_border=0.3;
-	const double acc_rate_low_border=0.2;
-
 	//hamiltonian parameters
-	const double v_fermi=50;
-	const double m=100;
-	const double omega=1;//200 is dense kinks
-	const double p_bottom=2;//corresponds to 'bottom' of potential
-	const double p_initial=p_bottom;//starting momentum value
+	struct hamiltonian_params_container ham_params;
+	ham_params.v_fermi=50;
+	ham_params.m=100;
+	ham_params.omega=1;//200 is dense kinks
+	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
+	ham_params.a=a;
+
+	//sigma generation parameters for metropolis
+	struct metrop_params_container met_params;
+	met_params.sigma_sweeps_period=1;//try bigger
+	met_params.sigma_coef=1.2;
+	met_params.acc_rate_up_border=0.3;
+	met_params.acc_rate_low_border=0.2;
+	met_params.p_initial=ham_params.p_bottom/3;
 
 	//histogram parameters, will be updated
 	const double p_range=20;
@@ -224,10 +227,10 @@ int main()
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
-	printf("v_fermi=%.2lf\n",v_fermi);
-	printf("p_bottom=%.2lf\n",p_bottom);
-	printf("mass m=%.2lf\n",m);
-	printf("omega=%.2lf\n",omega);
+	printf("v_fermi=%.2lf\n",ham_params.v_fermi);
+	printf("p_bottom=%.2lf\n",ham_params.p_bottom);
+	printf("mass m=%.2lf\n",ham_params.m);
+	printf("omega=%.2lf\n",ham_params.omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
 	printf("Traj_sample_period=%d\n",Traj_sample_period);
 	printf("python plotting ETA: %.1f\n",N_sample_trajectories*14.6/200);
@@ -254,10 +257,10 @@ int main()
 	fprintf(out_gen_des,"Traj_sample_period,%d\n",Traj_sample_period);
 	fprintf(out_gen_des,"a,%.4lf\n",a);
 	fprintf(out_gen_des,"beta,%.4lf\n",beta);
-	fprintf(out_gen_des,"v_fermi,%.4lf\n",v_fermi);
-	fprintf(out_gen_des,"m,%.4lf\n",m);
-	fprintf(out_gen_des,"omega,%.4lf\n",omega);
-	fprintf(out_gen_des,"p_bottom,%.4lf\n",p_bottom);
+	fprintf(out_gen_des,"v_fermi,%.4lf\n",ham_params.v_fermi);
+	fprintf(out_gen_des,"m,%.4lf\n",ham_params.m);
+	fprintf(out_gen_des,"omega,%.4lf\n",ham_params.omega);
+	fprintf(out_gen_des,"p_bottom,%.4lf\n",ham_params.p_bottom);
 	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
 	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
 
@@ -284,15 +287,16 @@ int main()
 	h_p_dens_plot=(double*)malloc(N_bins*sizeof(double));
 	double* h_x_dens_plot;
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
-
+/*
 	//variables preserved between perf_sweeps calls (only for p)
 	double h_sigma;
     double h_accepted;
-    /*  maybe its worth generating rng on gpu
+
+      maybe its worth generating rng on gpu
 	cudaMalloc((void**)&d_accepted, sizeof(int));	
 	curandState *d_rng_states;
     cudaMalloc((void**)&d_rng_states, N_spots*sizeof(curandState));
-    */
+    
 	
 	//sweeps and histograms kernel launch config
 
@@ -303,21 +307,20 @@ int main()
     {
         h_p_traj[i]=p_initial;
     }
-    
+ */   
 
+	double h_sigma;//extracts a value of sigma for later printing
 	//run termolisation sweeps
-	perform_sweeps(h_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
-		acc_rate_up_border, acc_rate_low_border, N_sweeps_waiting, h_sigma, h_accepted);
+	h_sigma=perform_sweeps(h_p_traj, h_p_traj_new, N_sweeps_waiting, ham_params, met_params);
 	
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
-        perform_sweeps(h_p_traj, a, v_fermi, m, omega, p_bottom, sigma_coef, sigma_sweeps_period,
-		acc_rate_up_border, acc_rate_low_border, Traj_sample_period, h_sigma, h_accepted);
+        h_sigma=perform_sweeps(h_p_traj, h_p_traj_new, Traj_sample_period, ham_params, met_params);
 
 		//evaluate x-trajectory
-		h_cumulative_transform(h_p_traj,h_x_traj,a,m);
+		h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
 
 		//add both trajectories points to cumulative histograms
 		h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
@@ -331,9 +334,9 @@ int main()
 		}
 
 		//evaluate energies corresponding to each trajectory
-		aver_T=average_square(h_p_traj)/(2*m);
-		aver_V=average_square(h_x_traj)*(m*omega*omega/2);
-		fprintf(out_energies,"%.3lf, %.3lf, %.3lf\n",aver_T,aver_V,omega/4);
+		aver_T=average_square(h_p_traj)/(2*ham_params.m);
+		aver_V=average_square(h_x_traj)*(ham_params.m*ham_params.omega*ham_params.omega/2);
+		fprintf(out_energies,"%.3lf, %.3lf, %.3lf\n",aver_T,aver_V,ham_params.omega/4);
 	}
 	
 	//copy, normalize and plot histograms to file
