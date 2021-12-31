@@ -13,8 +13,8 @@ and a |\psi(x)|^2 graph.*/
 //using namespace std;
 
 #define print_traj_flag 1
-#define N_spots 1024
-#define N_bins 1024
+#define N_spots 3000
+#define N_bins 2000
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -37,8 +37,8 @@ struct metrop_params_container
 double my_normal_double()
 {
 	double g1,g2;
-	g1=random();
-	g2=random();
+	g1=(double)rand()/RAND_MAX;
+	g2=(double)rand()/RAND_MAX;
 	return sqrt(-2*log(g2))*sin(2*M_PI*g1);
 }
 
@@ -165,7 +165,7 @@ double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
 			else
 			{
 				prob_acc=1.0/exp(S_new-S_old);
-				gamma=random();
+				gamma=(double)rand()/RAND_MAX;
 				if (gamma < prob_acc)
 				{
 					h_p_traj_new[i]=p_new;
@@ -207,22 +207,22 @@ int main()
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=50;
-	ham_params.m=100;
-	ham_params.omega=1;//200 is dense kinks
+	ham_params.m=1;
+	ham_params.omega=2000;//200 is dense kinks
 	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//sigma generation parameters for metropolis
 	struct metrop_params_container met_params;
-	met_params.sigma_sweeps_period=1;//try bigger
+	met_params.sigma_sweeps_period=10;//try bigger
 	met_params.sigma_coef=1.2;
 	met_params.acc_rate_up_border=0.3;
 	met_params.acc_rate_low_border=0.2;
 	met_params.p_initial=ham_params.p_bottom/3;
 
 	//histogram parameters, will be updated
-	const double p_range=20;
-	const double x_range=20;//tweaked manually, values outside are discarded
+	const double p_range=10;
+	const double x_range=300;//tweaked manually, values outside are discarded
 
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
@@ -366,4 +366,12 @@ int main()
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
+
+	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
+	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
+	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
+	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
+	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
+	printf("%d\n",RAND_MAX+1);
+
 }
