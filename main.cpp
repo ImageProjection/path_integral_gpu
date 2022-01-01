@@ -13,8 +13,8 @@ and a |\psi(x)|^2 graph.*/
 //using namespace std;
 
 #define print_traj_flag 1
-#define N_spots 2000
-#define N_bins 2000
+#define N_spots 1024
+#define N_bins 1024
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
