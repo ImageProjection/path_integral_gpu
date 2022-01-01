@@ -24,6 +24,9 @@ omega=values[8]
 p_bottom=values[9]
 p_range=values[10]
 x_range=values[11]
+traj_p_range=values[12]
+traj_x_range=values[13]
+
 
 
 
@@ -32,24 +35,24 @@ ax1=fig.add_subplot(1,1,1)
 
 def init_p():
     ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-p_range,p_range])
+    ax1.set_ylim([-traj_p_range,traj_p_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
-    ax1.set_xlabel("")
+    ax1.set_xlabel("p_traj")
     line,=ax1.plot([],[],color="blue")
     return line,
 
 def init_x():
     ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-x_range,x_range])
+    ax1.set_ylim([-traj_x_range,traj_x_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
-    ax1.set_xlabel("")
+    ax1.set_xlabel("x_traj")
     line,=ax1.plot([],[],color="blue")
     return line,
 
 def upd_p(frame_i):
     ax1.clear()
     ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-p_range,p_range])
+    ax1.set_ylim([-traj_p_range,traj_p_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
@@ -63,7 +66,7 @@ def upd_p(frame_i):
 def upd_x(frame_i):
     ax1.clear()
     ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-x_range,x_range])
+    ax1.set_ylim([-traj_x_range,traj_x_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
@@ -76,18 +79,17 @@ def upd_x(frame_i):
 
 #main for p
 start_time=time.time()
-dig_ar=[]
+dig_ar=[] #2d array, first index is trajectory number, second is node in trajectory
 f=open("out_p_traj.txt",'r')
 n_lines=0
 for line in f:
     dig_ar.append(list(map(float,line.split())))
     n_lines+=1
 
-dig_ar=dig_ar[n_lines-50:]
-ani=animation.FuncAnimation(fig, upd_p, init_func=init_p, interval=200,frames=50, repeat=False, blit=0)
+dig_ar=dig_ar[ (n_lines-50 if n_lines-50>0 else 0) :]
+ani=animation.FuncAnimation(fig, upd_p, init_func=init_p, interval=200,frames=(50 if n_lines-50>0 else n_lines), repeat=False, blit=0)
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-#plt.show()
 writervideo = animation.FFMpegWriter(fps=4)
 Path("traj_mp4").mkdir(exist_ok=True)
 ani.save('traj_mp4/p_traj_evolution.mp4', writer=writervideo)
@@ -98,18 +100,17 @@ print("elapsed time plotting p (seconds):",round(end_time-start_time,1))
 
 #main for x
 start_time=time.time()
-dig_ar=[]
+dig_ar=[] #2d array, first index is trajectory number, second is node in trajectory
 f=open("out_x_traj.txt",'r')
 n_lines=0
 for line in f:
     dig_ar.append(list(map(float,line.split())))
     n_lines+=1
 
-dig_ar=dig_ar[n_lines-50:]
-ani=animation.FuncAnimation(fig, upd_x, init_func=init_x, interval=200,frames=50, repeat=False, blit=0)
+dig_ar=dig_ar[ (n_lines-50 if n_lines-50>0 else 0) :]
+ani=animation.FuncAnimation(fig, upd_x, init_func=init_x, interval=200,frames=(50 if n_lines-50>0 else n_lines), repeat=False, blit=0)
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-#plt.show()
 writervideo = animation.FFMpegWriter(fps=4)
 Path("traj_mp4").mkdir(exist_ok=True)
 ani.save('traj_mp4/x_traj_evolution.mp4', writer=writervideo)

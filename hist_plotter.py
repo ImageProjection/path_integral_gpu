@@ -22,6 +22,8 @@ omega=values[8]
 p_bottom=values[9]
 p_range=values[10]
 x_range=values[11]
+traj_p_range=values[12]
+traj_x_range=values[12]
 
 
 

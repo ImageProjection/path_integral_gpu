@@ -13,7 +13,7 @@ and a |\psi(x)|^2 graph.*/
 //using namespace std;
 
 #define print_traj_flag 1
-#define N_spots 3000
+#define N_spots 2000
 #define N_bins 2000
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
@@ -198,8 +198,8 @@ int main()
     clock_t start,end;
 	start=clock();
 	//termo parameters
-	const int N_sweeps_waiting=10000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
+	const int N_sweeps_waiting=2000;//initial termolisation length (in sweeps)
+	const int N_sample_trajectories=800;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=1;//0.035*2;
 	double beta=a*N_spots;
@@ -223,6 +223,10 @@ int main()
 	//histogram parameters, will be updated
 	const double p_range=10;
 	const double x_range=300;//tweaked manually, values outside are discarded
+	
+	//traj range for plotter
+	const double traj_p_range=10;
+	const double traj_x_range=300;
 
 	//display parameters to terminal
 	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
@@ -233,7 +237,7 @@ int main()
 	printf("omega=%.2lf\n",ham_params.omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
 	printf("Traj_sample_period=%d\n",Traj_sample_period);
-	printf("python plotting ETA: %.1f\n",N_sample_trajectories*14.6/200);
+	printf("cpp code ETA (seconds): %.1f\n",0.15*1e-6*N_sweeps_waiting*N_spots+3.78/3.2*1e-7*Traj_sample_period*N_sample_trajectories*N_spots);
 
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
@@ -263,6 +267,8 @@ int main()
 	fprintf(out_gen_des,"p_bottom,%.4lf\n",ham_params.p_bottom);
 	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
 	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
+	fprintf(out_gen_des,"p_range,%.4lf\n",traj_p_range);
+	fprintf(out_gen_des,"p_range,%.4lf\n",traj_x_range);
 
 	
 	
@@ -366,12 +372,4 @@ int main()
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
-
-	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
-	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
-	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
-	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
-	printf("my double asdnormal: %.3lf\n",(double)rand()/RAND_MAX);
-	printf("%d\n",RAND_MAX+1);
-
 }
