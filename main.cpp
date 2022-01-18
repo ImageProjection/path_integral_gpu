@@ -1,16 +1,7 @@
-/*Program models the behaviour of a particle with Twin Peaks hamiltonian
-It produces trajectories
-and a |\psi(x)|^2 graph.*/
-
-//#include "cuda_runtime.h"
-//#include "device_launch_parameters.h"
-//#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
-
-//using namespace std;
 
 #define print_traj_flag 1
 #define N_spots 1024
@@ -34,7 +25,7 @@ struct metrop_params_container
 	double p_initial;
 };
 
-double my_normal_double()
+double my_normal_double()//TODO try cuda for rng
 {
 	double g1,g2;
 	g1=(double)rand()/RAND_MAX;
@@ -109,15 +100,6 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m
 	{
 		h_x_traj[j]=h_x_traj[j-1]+h_p_traj[j]*a/m;
 	}
-	/*
-	for (int j = 1; j < N_spots; j++)
-	{
-		for (int i = 1; i <= j; i++)
-		{
-			h_x_traj[j]+=h_p_traj[i];
-		}		
-	}
-	*/	
 }
 
 double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
@@ -154,8 +136,9 @@ double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
 			p_right_node=h_p_traj[(i+1+N_spots)%N_spots];
         	p_old=h_p_traj[i];	
         	p_new=p_old+sigma*my_normal_double();
-			S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_old*p_old/2/ham_params.m;//sqrt(p_old*p_old+m*m);
-			S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_new*p_new/2/ham_params.m;//sqrt(p_new*p_new+m*m);
+			//non-relativistic harm oscil. action
+			S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_old*p_old/2/ham_params.m;
+			S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_new*p_new/2/ham_params.m;
 
 			if (S_new < S_old)
 			{
@@ -208,13 +191,13 @@ int main()
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=50;
 	ham_params.m=1;
-	ham_params.omega=2000;//200 is dense kinks
+	ham_params.omega=2000;//200 is dense kinks in for twin peaks
 	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//sigma generation parameters for metropolis
 	struct metrop_params_container met_params;
-	met_params.sigma_sweeps_period=10;//try bigger
+	met_params.sigma_sweeps_period=10;
 	met_params.sigma_coef=1.2;
 	met_params.acc_rate_up_border=0.3;
 	met_params.acc_rate_low_border=0.2;
@@ -293,27 +276,6 @@ int main()
 	h_p_dens_plot=(double*)malloc(N_bins*sizeof(double));
 	double* h_x_dens_plot;
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
-/*
-	//variables preserved between perf_sweeps calls (only for p)
-	double h_sigma;
-    double h_accepted;
-
-      maybe its worth generating rng on gpu
-	cudaMalloc((void**)&d_accepted, sizeof(int));	
-	curandState *d_rng_states;
-    cudaMalloc((void**)&d_rng_states, N_spots*sizeof(curandState));
-    
-	
-	//sweeps and histograms kernel launch config
-
-	//initialise p-trajectory, sigma, accepted and rng
-    h_sigma=p_initial/3;
-    h_accepted=(sigma_sweeps_period*N_spots)*0.5*(acc_rate_low_border+acc_rate_up_border);//to not update on first sweep, when no data to eval acc_rate yet		
-    for (int i = 0; i < N_spots; i++)
-    {
-        h_p_traj[i]=p_initial;
-    }
- */   
 
 	double h_sigma;//extracts a value of sigma for later printing
 	//run termolisation sweeps

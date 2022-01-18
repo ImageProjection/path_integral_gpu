@@ -11,7 +11,7 @@ run:
 	./main
 
 full_run:
-	nvcc -Wno-deprecated-gpu-targets -o main -arch=sm_35 main.cu && ./main && python3 plotter.py && python3 hist_plotter.py
+	g++ main.cpp && ./a.out && python3 plotter.py && python3 hist_plotter.py
 
 git_log:
 	git log --all --graph --decorate
