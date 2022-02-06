@@ -102,6 +102,16 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m
 	}
 }
 
+double average_square(double* h_traj)
+{
+	double sum=0;
+	for (int i = 0; i < N_spots; i++)
+	{
+		sum+=h_traj[i]*h_traj[i];
+	}
+	return sum/N_spots;
+}
+
 double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new is purely for internal usage,
@@ -137,8 +147,8 @@ double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
         	p_old=h_p_traj[i];	
         	p_new=p_old+sigma*my_normal_double();
 			//non-relativistic harm oscil. action
-			S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_old*p_old/2/ham_params.m;
-			S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) + p_new*p_new/2/ham_params.m;
+			S_old=(p_old*p_old-p_old*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) +ham_params.a*p_old*p_old/2/ham_params.m;
+			S_new=(p_new*p_new-p_new*(p_left_node+p_right_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega) +ham_params.a*p_new*p_new/2/ham_params.m;
 
 			if (S_new < S_old)
 			{
@@ -165,16 +175,6 @@ double perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_sweeps,
 	return sigma;
 }
 
-double average_square(double* h_traj)
-{
-	double sum=0;
-	for (int i = 0; i < N_spots; i++)
-	{
-		sum+=h_traj[i]*h_traj[i];
-	}
-	return sum/N_spots;
-}
-
 int main()
 {
 	srand(time(NULL));
@@ -182,16 +182,16 @@ int main()
 	start=clock();
 	//termo parameters
 	const int N_sweeps_waiting=2000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=800;//this many traj-s are used to build histogram
-	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
-	const double a=1;//0.035*2;
+	const int N_sample_trajectories=1000;//this many traj-s are used to build histogram
+	const int Traj_sample_period=4000;//it takes this time to evolve into new trajectory //do not choose 1
+	const double a=0.015;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=50;
 	ham_params.m=1;
-	ham_params.omega=2000;//200 is dense kinks in for twin peaks
+	ham_params.omega=1;//200 is dense kinks in for twin peaks
 	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
