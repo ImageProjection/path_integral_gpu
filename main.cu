@@ -3,32 +3,18 @@ It produces trajectories
 and a |\psi(x)|^2 graph. Computationally intensive code
 runs on GPU (programmed with CUDA).*/
 
-//#include "cuda_runtime.h"
-//#include "device_launch_parameters.h"
-//#include <math.h>
-#include <stdio.h>
-//#include <climits>
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include <cstdio>
+#include <climits>
 #include <curand.h>
 #include <curand_kernel.h>
-#include <time.h>
-//using namespace std;
+using namespace std;
 
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
-
-int my_floor(double x)//because c floor returns double
-{
-	if(x>=0)
-	{
-		return int(x);
-	}
-	else
-	{
-		return int(x-1);
-	}
-}
 
 void print_traj(FILE* out_traj,double* traj,double h_sigma)
 {
@@ -74,7 +60,7 @@ void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, doubl
 		abs= ( (h_traj[i] >= 0) ? h_traj[i] : -h_traj[i] );
 		if (abs < range_end)
 		{
-			bin_i=my_floor( (h_traj[i]-range_start)/bin_width );
+			bin_i=int( (h_traj[i]-range_start)/bin_width );
 			h_hist[bin_i]+=1;
 		}
 		else
@@ -218,9 +204,10 @@ int main()
 {
     clock_t start,end;
 	start=clock();
+	
 	//metropolis parameters
 	const int N_sweeps_waiting=200000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=2300;//this many traj-s are used to build histogram
 	const int Traj_sample_period=200;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.035*2;
 	double beta=a*N_spots;
@@ -232,7 +219,7 @@ int main()
 	const double acc_rate_low_border=0.2;
 
 	//hamiltonian parameters
-	const double v_fermi=50;
+	const double v_fermi=500;
 	const double m=0.3;
 	const double omega=200;//200 is dense kinks
 	const double p_bottom=2;//corresponds to 'bottom' of potential
@@ -279,7 +266,7 @@ int main()
 	fprintf(out_gen_des,"beta,%.4lf\n",beta);
 	fprintf(out_gen_des,"v_fermi,%.4lf\n",v_fermi);
 	fprintf(out_gen_des,"m,%.4lf\n",m);
-	fprintf(out_gen_des,"omega,%.4lf\n",omega);
+	fprintf(out_gen_des,"omega,%.4lf\n",N_sweeps_waiting);
 	fprintf(out_gen_des,"p_bottom,%.4lf\n",p_bottom);
 	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
 	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
