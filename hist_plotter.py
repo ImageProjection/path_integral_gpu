@@ -65,5 +65,5 @@ plt.locator_params(nbins=20)
 plt.tight_layout()
 
 Path("traj_hist").mkdir(exist_ok=True)
-plt.savefig(f"traj_hist/m={m}_p_and_x_dens_plots.png",bbox_inches='tight',dpi=350)
+plt.savefig("traj_hist/m="+str(m)+"_p_and_x_dens_plots.png",bbox_inches='tight',dpi=350)
 #plt.show()

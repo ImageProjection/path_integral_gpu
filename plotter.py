@@ -57,10 +57,10 @@ def upd_p(frame_i):
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     sigma=dig_ar[frame_i][N_spots]
-    my_xlabel=f"sample traj No={frame_i}\n"
-    my_xlabel+=f"sigma={sigma}\n"
+    my_xlabel="sample traj No="+str(frame_i)+"\n"
+    my_xlabel+="sigma="+str(sigma)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
-    ax1.set_xlabel(my_xlabel,loc='left')
+    ax1.set_xlabel(my_xlabel)
     return line,
 
 def upd_x(frame_i):
@@ -71,10 +71,10 @@ def upd_x(frame_i):
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     sigma=dig_ar[frame_i][N_spots]
-    my_xlabel=f"sample traj No={frame_i}\n"
-    my_xlabel+=f"sigma={sigma}\n"
+    my_xlabel="sample traj No="+str(frame_i)+"\n"
+    my_xlabel+="sigma="+str(sigma)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
-    ax1.set_xlabel(my_xlabel,loc='left')
+    ax1.set_xlabel(my_xlabel)
     return line,
 
 #main for p
@@ -91,7 +91,7 @@ ani=animation.FuncAnimation(fig, upd_p, init_func=init_p, interval=200,frames=(5
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 writervideo = animation.FFMpegWriter(fps=4)
-Path("traj_mp4").mkdir(exist_ok=True)
+#Path("traj_mp4").mkdir(exist_ok=True)
 ani.save('traj_mp4/p_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
@@ -112,7 +112,6 @@ ani=animation.FuncAnimation(fig, upd_x, init_func=init_x, interval=200,frames=(5
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 writervideo = animation.FFMpegWriter(fps=4)
-Path("traj_mp4").mkdir(exist_ok=True)
 ani.save('traj_mp4/x_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
