@@ -182,8 +182,8 @@ int main()
 	start=clock();
 	//termo parameters
 	const int N_sweeps_waiting=2000;//initial termolisation length (in sweeps)
-	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
-	const int Traj_sample_period=400;//it takes this time to evolve into new trajectory //do not choose 1
+	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
+	const int Traj_sample_period=10000;//it takes this time to evolve into new trajectory //do not choose 1
 	const double a=0.015;//0.035*2;
 	double beta=a*N_spots;
 
