@@ -12,11 +12,12 @@ run:
 
 
 #for NB
-full_run:
+full_run_NB:
 	g++ main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py 
 	
 #for PC
-#g++ main.cpp && ./a.out && python3 plotter.py && python3 hist_plotter.py
+full_run_PC:
+	g++ main.cpp && ./a.out && python3 plotter.py && python3 hist_plotter.py
 
 git_log:
 	git log --all --graph --decorate
