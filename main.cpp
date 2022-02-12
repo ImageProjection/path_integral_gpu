@@ -26,6 +26,8 @@ struct metrop_params_container
 	int N_cycles_per_step;
 	int T_molec;
 	int T_lang;
+	double e_molec;
+	double e_lang;
 };
 
 double my_normal_double()//TODO try cuda for rng
@@ -123,10 +125,20 @@ void copy_traj(double* destination, double* source)
 	}
 }
 
-double S(double* h_traj)//action, PBC trajectory
+double S(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
 	int S=0;
-	//some cycle
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double omega=ham_params.omega;
+	double prev_mode;
+
+	for(int k=0; k<N_spots; k++)
+	{
+		prev_node=h_traj[(k-1+N_spots)%N_spots];
+		S+= (h_traj[k]-prev_node)*(h_traj[k]-prev_node) / (2*a*a*m*omega*omega) + h_traj[k]*h_traj[k]/(2*m);
+	}
+	S *= a; 
 	return S;
 }
 
@@ -144,16 +156,16 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_steps
 		{
 			for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
 			{
-				//perform iteration using molecular dynamics algo
+				//perform iterations using molecular dynamics algo
 			}
 			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
 			{
-				//perform iteration using langevin algo
+				//perform iterations using langevin algo
 			}
 		}
 		//accept or discard this trajectory using standard metropolis fork
-		S_old=S(h_p_traj);
-		S_new=S(h_p_traj_new);
+		S_old=S(h_p_traj, ham_params);
+		S_new=S(h_p_traj_new, ham_params);
 		if (S_new < S_old)
 		{
 			copy_traj(h_p_traj,h_p_traj_new);
@@ -181,7 +193,7 @@ int main()
 	//termo parameters
 	const int N_steps_waiting=2000; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=100;
+	const int N_steps_per_traj=100;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.015;//0.035*2;
 	double beta=a*N_spots;
 
@@ -189,31 +201,29 @@ int main()
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=50;
 	ham_params.m=1;
-	ham_params.omega=1;//200 is dense kinks in for twin peaks
+	ham_params.omega=1;
 	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
-	met_params.sigma_sweeps_period=10;
-	met_params.sigma_coef=1.2;
-	met_params.acc_rate_up_border=0.3;
-	met_params.acc_rate_low_border=0.2;
 	met_params.p_initial=ham_params.p_bottom/3;
 	met_params.N_cycles_per_step=10;
 	met_params.T_molec=9;
 	met_params.T_lang=2;
+	met_params.e_molec=0.0005;
+	met_params.e_lang=0.0005;
 
-	//histogram parameters, will be updated
+	//histogram parameters
 	const double p_range=10;
-	const double x_range=300;//tweaked manually, values outside are discarded
+	const double x_range=30;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
 	const double traj_p_range=10;
-	const double traj_x_range=300;
+	const double traj_x_range=30;
 
 	//display parameters to terminal
-	printf("===Particle with (actual) Twin Peaks hamiltonian===\n");
+	printf("===CPP CODE LAUNCH===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
 	printf("v_fermi=%.2lf\n",ham_params.v_fermi);
 	printf("p_bottom=%.2lf\n",ham_params.p_bottom);
@@ -245,9 +255,9 @@ int main()
 
 	//print general simulation description to file
 	fprintf(out_gen_des,"N_spots,%d\n",N_spots);
-	fprintf(out_gen_des,"N_sweeps_waiting,%d\n",N_sweeps_waiting);
+	fprintf(out_gen_des,"N_steps_waiting,%d\n",N_steps_waiting);
 	fprintf(out_gen_des,"N_sample_trajectories,%d\n",N_sample_trajectories);
-	fprintf(out_gen_des,"Traj_sample_period,%d\n",Traj_sample_period);
+	fprintf(out_gen_des,"N_steps_per_traj,%d\n",N_steps_per_traj);
 	fprintf(out_gen_des,"a,%.4lf\n",a);
 	fprintf(out_gen_des,"beta,%.4lf\n",beta);
 	fprintf(out_gen_des,"v_fermi,%.4lf\n",ham_params.v_fermi);
@@ -293,7 +303,7 @@ int main()
 	{
 		//evolve p-trajectory
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, N_steps_per_traj, ham_params, met_params);
-		printf("Acceptance rate after reaching p-traj No (%d) steps: %.4lf",i,accepted/N_steps_per_traj);
+		printf("Acceptance rate after reaching p-traj No (%d) %.4lf",i,accepted/N_steps_per_traj);
 
 		//evaluate x-trajectory
 		h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
@@ -302,7 +312,7 @@ int main()
 		h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
 		h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
 
-		//print trajectories with appended sigma		
+		//print trajectories with appended acc rate (evaluated over steps made for this traj)		
 		if (print_traj_flag)
 		{
 			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
@@ -342,4 +352,5 @@ int main()
 	end=clock();
 	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
+	printf("===CPP CODE FINISHED WORKING===\n");
 }
