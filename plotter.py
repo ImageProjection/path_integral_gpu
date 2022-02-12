@@ -56,9 +56,9 @@ def upd_p(frame_i):
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-    sigma=dig_ar[frame_i][N_spots]
+    acc_rate=dig_ar[frame_i][N_spots]
     my_xlabel="sample traj No="+str(frame_i)+"\n"
-    my_xlabel+="sigma="+str(sigma)+"\n"
+    my_xlabel+="acc_rate="+str(acc_rate)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
     return line,
@@ -70,9 +70,9 @@ def upd_x(frame_i):
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-    sigma=dig_ar[frame_i][N_spots]
+    acc_rate=dig_ar[frame_i][N_spots]
     my_xlabel="sample traj No="+str(frame_i)+"\n"
-    my_xlabel+="sigma="+str(sigma)+"\n"
+    my_xlabel+="acc_rate="+str(acc_rate)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
     return line,
