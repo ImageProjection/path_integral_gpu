@@ -131,7 +131,7 @@ double S(double* h_traj, struct hamiltonian_params_container ham_params)//action
 	double a=ham_params.a;
 	double m=ham_params.m;
 	double omega=ham_params.omega;
-	double prev_mode;
+	double prev_node;
 
 	for(int k=0; k<N_spots; k++)
 	{
@@ -142,25 +142,53 @@ double S(double* h_traj, struct hamiltonian_params_container ham_params)//action
 	return S;
 }
 
-int perform_sweeps(double* h_p_traj, double* h_p_traj_new, int N_steps
+int perform_sweeps(double* h_p_traj, double* h_p_traj_new, 
+	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
 	struct hamiltonian_params_container ham_params,
-	struct metrop_params_container met_params)//h_p_traj_new is purely for internal usage, but is allocated outside since it's 1 time	
+	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
 {										 
 	int accepted=0;	
-	double p_left_node,p_right_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
-    
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double omega=ham_params.omega;
+	double p_prev_node,p_next_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
+    //TODO init pi somehow
     for (int steps_counter=0; steps_counter < N_steps; steps_counter++)
     {
 		//evaluate trajectory for metropolis proposition
 		for (int cycles_counter=0; cycles_counter < met_params.N_cycles_per_step; cycles_counter++)
 		{
+			//perform iterations using molecular dynamics algo
 			for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
 			{
-				//perform iterations using molecular dynamics algo
+				//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
+				//especially when doing more then 1 langevin step (is it just translation, so we can keep pi?)
+				//phi(1)=phi(0)+eps*pi(1/2)
+				for(int i=0; i<N_spots; i++)
+				{
+					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
+				}
+				//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
+				for(int i=0; i<N_spots; i++)
+				{
+					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
+					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*( a*h_p_traj_new[i]/m + (2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)  );
+				}
+				copy_traj(h_p_traj, h_p_traj_new);
+				copy_traj(h_pi_vect, h_pi_vect_new);
 			}
+			//perform iterations using langevin algo
 			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
 			{
-				//perform iterations using langevin algo
+				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
+				for(int i=0; i<N_spots; i++)
+				{
+					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
+					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+					h_p_traj_new[i]=h_p_traj[i] - met_params.e_lang*( a*h_p_traj[i]/m + (2*h_p_traj[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)  ) + sqrt(2*met_params.e_lang)*my_normal_double();
+				}
+				copy_traj(h_p_traj, h_p_traj_new);
 			}
 		}
 		//accept or discard this trajectory using standard metropolis fork
@@ -210,9 +238,9 @@ int main()
 	met_params.p_initial=ham_params.p_bottom/3;
 	met_params.N_cycles_per_step=10;
 	met_params.T_molec=9;
-	met_params.T_lang=2;
-	met_params.e_molec=0.0005;
+	met_params.T_lang=1;//do not touch, unless it is pure Langevin
 	met_params.e_lang=0.0005;
+	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
 	const double p_range=10;
@@ -236,7 +264,7 @@ int main()
 	printf("N_cycles_per_step=%d\n",met_params.N_cycles_per_step);
 	printf("T_molec=%d\n",met_params.T_molec);
 	printf("T_lang=%d\n",met_params.T_lang);
-	printf("cpp code ETA (seconds): %.1f\n",0.15*1e-6*N_sweeps_waiting*N_spots+3.78/3.2*1e-7*Traj_sample_period*N_sample_trajectories*N_spots);
+	//printf("cpp code ETA (seconds): %.1f\n",0.15*1e-6*N_sweeps_waiting*N_spots+3.78/3.2*1e-7*Traj_sample_period*N_sample_trajectories*N_spots);
 
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
@@ -276,6 +304,10 @@ int main()
 	h_p_traj=(double*)malloc(N_spots*sizeof(double));
     double* h_p_traj_new;
 	h_p_traj_new=(double*)malloc(N_spots*sizeof(double));
+	double* h_pi_vect;
+	h_pi_vect=(double*)malloc(N_spots*sizeof(double));
+	double* h_pi_vect_new;
+	h_pi_vect_new=(double*)malloc(N_spots*sizeof(double));
 	double* h_x_traj;
 	h_x_traj=(double*)malloc(N_spots*sizeof(double));
 
@@ -293,16 +325,29 @@ int main()
 	double* h_x_dens_plot;
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
 
+	//init h_p_traj and h_pi_vect
+	for(int i=0; i<N_spots, i++)
+	{
+		h_p_traj[i]=0;
+	}
+	double p_prev_node,p_next_node;
+	for(int i=0; i<N_spots, i++)
+	{
+		p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
+		p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+		h_pi_vect[i]=-met_params.e_molec*0.5*( a*h_p_traj[i]/ham_params.m + (2*h_p_traj[i]-(p_prev_node+p_next_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega)  );
+	}
+
 	//run termolisation sweeps
 	//TODO configure to increase langevin part?
-	double accepted=perform_sweeps(h_p_traj, h_p_traj_new, N_steps_waiting, ham_params, met_params);
+	double accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_pi_vect, h_pi_vect_new, N_steps_waiting, ham_params, met_params);
 	printf("Acceptance rate after running termolisation steps: %.4lf",accepted/N_steps_waiting);
 	
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
-        accepted=perform_sweeps(h_p_traj, h_p_traj_new, N_steps_per_traj, ham_params, met_params);
+        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
 		printf("Acceptance rate after reaching p-traj No (%d) %.4lf",i,accepted/N_steps_per_traj);
 
 		//evaluate x-trajectory
