@@ -326,12 +326,12 @@ int main()
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
 
 	//init h_p_traj and h_pi_vect
-	for(int i=0; i<N_spots, i++)
+	for(int i=0; i<N_spots; i++)
 	{
 		h_p_traj[i]=0;
 	}
 	double p_prev_node,p_next_node;
-	for(int i=0; i<N_spots, i++)
+	for(int i=0; i<N_spots; i++)
 	{
 		p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 		p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
@@ -348,7 +348,10 @@ int main()
 	{
 		//evolve p-trajectory
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
-		printf("Acceptance rate after reaching p-traj No (%d) %.4lf",i,accepted/N_steps_per_traj);
+		if (i%10==9)
+		{
+			printf("Acceptance rate after reaching p-traj No (%d) %.4lf\n",i,accepted/N_steps_per_traj);
+		}
 
 		//evaluate x-trajectory
 		h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
