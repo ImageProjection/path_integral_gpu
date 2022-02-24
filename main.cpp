@@ -141,21 +141,24 @@ double S(double* h_traj, struct hamiltonian_params_container ham_params)//action
 	S *= a; 
 	return S;
 }
-
-int perform_sweeps(double* h_p_traj, double* h_p_traj_new, 
+ 
+int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
 	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
-{										 
+{	
+	double temp,temp_S_1, temp_S_2;									 
 	int accepted=0;	
 	double a=ham_params.a;
 	double m=ham_params.m;
 	double omega=ham_params.omega;
 	double p_prev_node,p_next_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
-    //TODO init pi somehow
     for (int steps_counter=0; steps_counter < N_steps; steps_counter++)
     {
-		//evaluate trajectory for metropolis proposition
+		//backup trajectory before taking a step, so that if proposition is not accepted
+		//h_p_traj, from which mp4 is made, can be restored
+		copy_traj(h_p_traj_prev_step, h_p_traj);
+		//evaluate trajectory for metropolis proposition (==make a step)
 		for (int cycles_counter=0; cycles_counter < met_params.N_cycles_per_step; cycles_counter++)
 		{
 			//perform iterations using molecular dynamics algo
@@ -177,8 +180,11 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new,
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
 				copy_traj(h_pi_vect, h_pi_vect_new);
+				temp_S_1=S(h_p_traj, ham_params);
+				temp_S_2=S(h_p_traj_new, ham_params);
+
 			}
-			//perform iterations using langevin algo
+			//perform iterations using Langevin algo
 			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
 			{
 				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
@@ -189,25 +195,34 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new,
 					h_p_traj_new[i]=h_p_traj[i] - met_params.e_lang*( a*h_p_traj[i]/m + (2*h_p_traj[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)  ) + sqrt(2*met_params.e_lang)*my_normal_double();
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
+				temp_S_1=S(h_p_traj, ham_params);
+				temp_S_2=S(h_p_traj_new, ham_params);
 			}
 		}
 		//accept or discard this trajectory using standard metropolis fork
-		S_old=S(h_p_traj, ham_params);
-		S_new=S(h_p_traj_new, ham_params);
+		S_old=S(h_p_traj_prev_step, ham_params);
+		S_new=S(h_p_traj, ham_params);
+		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 		if (S_new < S_old)
 		{
-			copy_traj(h_p_traj,h_p_traj_new);
+			;
+			accepted++;
 		}
-		else
-		{
-			prob_acc=1.0/exp(S_new-S_old);
-			gamma=(double)rand()/RAND_MAX;
-			if (gamma < prob_acc)
-				{
-					copy_traj(h_p_traj,h_p_traj_new);
-					accepted++;
-				}
-		}
+			else
+			{
+				temp=exp(S_old-S_new);
+				prob_acc=exp(S_old-S_new);
+				gamma=(double)rand()/RAND_MAX;
+				if (gamma < prob_acc)//then accept
+					{
+						;
+						accepted++;
+					}
+					else//do not accept, thus revert
+					{
+						copy_traj(h_p_traj, h_p_traj_prev_step);
+					}
+			}
 
 	}
 	return accepted;//how many trajs of N_steps_per_traj were accepted
@@ -219,9 +234,9 @@ int main()
     clock_t start,end;
 	start=clock();
 	//termo parameters
-	const int N_steps_waiting=2000; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=100;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_waiting=20000; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.015;//0.035*2;
 	double beta=a*N_spots;
 
@@ -236,19 +251,19 @@ int main()
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_bottom/3;
-	met_params.N_cycles_per_step=10;
+	met_params.N_cycles_per_step=1;
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.e_lang=0.0005;
+	met_params.e_lang=0.000005;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
-	const double p_range=10;
-	const double x_range=30;//tweaked manually, values outside are discarded
+	const double p_range=2.5;
+	const double x_range=15;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
-	const double traj_p_range=10;
-	const double traj_x_range=30;
+	const double traj_p_range=2.5;
+	const double traj_x_range=10;
 
 	//display parameters to terminal
 	printf("===CPP CODE LAUNCH===\n");
@@ -304,6 +319,8 @@ int main()
 	h_p_traj=(double*)malloc(N_spots*sizeof(double));
     double* h_p_traj_new;
 	h_p_traj_new=(double*)malloc(N_spots*sizeof(double));
+	double* h_p_traj_prev_step;//a trajectory that was before step was taken
+	h_p_traj_prev_step=(double*)malloc(N_spots*sizeof(double));
 	double* h_pi_vect;
 	h_pi_vect=(double*)malloc(N_spots*sizeof(double));
 	double* h_pi_vect_new;
@@ -328,8 +345,9 @@ int main()
 	//init h_p_traj and h_pi_vect
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=0;
+		h_p_traj[i]=my_normal_double();//TODO set to 0
 	}
+	printf("initial taj action is: %.5lf\n",S(h_p_traj,ham_params));
 	double p_prev_node,p_next_node;
 	for(int i=0; i<N_spots; i++)
 	{
@@ -340,17 +358,17 @@ int main()
 
 	//run termolisation sweeps
 	//TODO configure to increase langevin part?
-	double accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_pi_vect, h_pi_vect_new, N_steps_waiting, ham_params, met_params);
-	printf("Acceptance rate after running termolisation steps: %.4lf",accepted/N_steps_waiting);
+	double accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_waiting, ham_params, met_params);
+	printf("Acceptance rate after running termolisation steps: %.4lf%\n",accepted/N_steps_waiting*100);
 	
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
-        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
-		if (i%10==9)
+        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+		if (i%1==0)
 		{
-			printf("Acceptance rate after reaching p-traj No (%d) %.4lf\n",i,accepted/N_steps_per_traj);
+			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,accepted/N_steps_per_traj*100);
 		}
 
 		//evaluate x-trajectory
