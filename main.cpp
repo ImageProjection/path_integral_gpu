@@ -127,7 +127,7 @@ void copy_traj(double* destination, double* source)
 
 double S(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
-	int S=0;
+	double S=0;
 	double a=ham_params.a;
 	double m=ham_params.m;
 	double omega=ham_params.omega;
@@ -141,6 +141,12 @@ double S(double* h_traj, struct hamiltonian_params_container ham_params)//action
 	S *= a; 
 	return S;
 }
+/*
+double S_k(double* h_traj, struct hamiltonian_params_container ham_params)//partial derivative {ds}/{dp_k}
+{
+	double 
+}
+*/
  
 int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
 	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
@@ -180,8 +186,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
 				copy_traj(h_pi_vect, h_pi_vect_new);
-				temp_S_1=S(h_p_traj, ham_params);
-				temp_S_2=S(h_p_traj_new, ham_params);
+				//temp_S_1=S(h_p_traj, ham_params);
+				//temp_S_2=S(h_p_traj_new, ham_params);
 
 			}
 			//perform iterations using Langevin algo
@@ -195,8 +201,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					h_p_traj_new[i]=h_p_traj[i] - met_params.e_lang*( a*h_p_traj[i]/m + (2*h_p_traj[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)  ) + sqrt(2*met_params.e_lang)*my_normal_double();
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
-				temp_S_1=S(h_p_traj, ham_params);
-				temp_S_2=S(h_p_traj_new, ham_params);
+				//temp_S_1=S(h_p_traj, ham_params);
+				//temp_S_2=S(h_p_traj_new, ham_params);
 			}
 		}
 		//accept or discard this trajectory using standard metropolis fork
