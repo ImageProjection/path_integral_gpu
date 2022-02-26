@@ -127,18 +127,23 @@ void copy_traj(double* destination, double* source)
 
 double S(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
-	double S=0;
+	double S;
+	double S_part_A=0;//first term
+	double S_part_B=0;//part with T in it
+	double prev_node;
 	double a=ham_params.a;
 	double m=ham_params.m;
+	double p_bottom=ham_params.p_bottom;
+	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
-	double prev_node;
-
 	for(int k=0; k<N_spots; k++)
 	{
 		prev_node=h_traj[(k-1+N_spots)%N_spots];
-		S+= (h_traj[k]-prev_node)*(h_traj[k]-prev_node) / (2*a*a*m*omega*omega) + h_traj[k]*h_traj[k]/(2*m);
+		S_part_A += (h_traj[k]-prev_node)*(h_traj[k]-prev_node) / (2*a*a*m*omega*omega);
+		S_part_B += v_fermi*sqrt( (h_traj[k]*h_traj[k]-p_bottom*p_bottom)*(h_traj[k]*h_traj[k]-p_bottom*p_bottom)/(4*p_bottom*p_bottom)
+			+m*m*v_fermi*v_fermi  );
 	}
-	S *= a; 
+	S=a*(S_part_A + S_part_B); 
 	return S;
 }
 /*
@@ -185,12 +190,12 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
 
-					S_der_A=(2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)
+					S_der_A=(2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega);
 
 					S_der_B=a*v_fermi*h_p_traj_new[i]*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)/
 					sqrt(p_bottom*p_bottom*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)
 					*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)+
-					4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi)
+					4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi);
 
 					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*(S_der_A + S_der_B);
 				}
@@ -256,17 +261,17 @@ int main()
 	start=clock();
 	//termo parameters
 	const int N_steps_waiting=20000; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=150;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=100;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.015;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=50;
+	ham_params.v_fermi=5000;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_bottom=4;//corresponds to 'bottom' of potential
+	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
