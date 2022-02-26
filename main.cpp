@@ -13,7 +13,7 @@ struct hamiltonian_params_container
 	double v_fermi;
 	double m;
 	double omega;
-	double p_bottom;
+	double p_b;
 	double a;
 };
 struct metrop_params_container
@@ -127,21 +127,25 @@ void copy_traj(double* destination, double* source)
 
 double S(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
-	double S;
+	double S,p;
 	double S_part_A=0;//first term
 	double S_part_B=0;//part with T in it
+	double T_sq,T_m;
 	double prev_node;
 	double a=ham_params.a;
 	double m=ham_params.m;
-	double p_bottom=ham_params.p_bottom;
+	double p_b=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	for(int k=0; k<N_spots; k++)
 	{
 		prev_node=h_traj[(k-1+N_spots)%N_spots];
-		S_part_A += (h_traj[k]-prev_node)*(h_traj[k]-prev_node) / (2*a*a*m*omega*omega);
-		S_part_B += v_fermi*sqrt( (h_traj[k]*h_traj[k]-p_bottom*p_bottom)*(h_traj[k]*h_traj[k]-p_bottom*p_bottom)/(4*p_bottom*p_bottom)
-			+m*m*v_fermi*v_fermi  );
+		p=h_traj[k];
+		S_part_A += (p-prev_node)*(p-prev_node) / (2*a*a*m*omega*omega);
+
+		T_sq=(p*p - p_b*p_b)*(p*p - p_b*p_b)/(4*p_b*p_b);
+		T_m=m*m*v_fermi*v_fermi;
+		S_part_B += v_fermi*sqrt(T_sq+T_m);
 	}
 	S=a*(S_part_A + S_part_B); 
 	return S;
@@ -162,10 +166,11 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	int accepted=0;	
 	double a=ham_params.a;
 	double m=ham_params.m;
-	double p_bottom=ham_params.p_bottom;
+	double p_b=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	double p_prev_node,p_next_node,S_der_A,S_der_B,S_old,S_new,prob_acc,gamma;
+	double p,S_der_var,S_der_con;
     for (int steps_counter=0; steps_counter < N_steps; steps_counter++)
     {
 		//backup trajectory before taking a step, so that if proposition is not accepted
@@ -189,13 +194,13 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				{
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+					p=h_p_traj_new[i];
 
-					S_der_A=(2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega);
+					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
 
-					S_der_B=a*v_fermi*h_p_traj_new[i]*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)/
-					sqrt(p_bottom*p_bottom*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)
-					*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)+
-					4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi);
+					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
+					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
+					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
 
 					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*(S_der_A + S_der_B);
 				}
@@ -212,15 +217,15 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
 
-					S_der_A=(2*h_p_traj[i]-(p_prev_node+p_next_node))/(a*m*omega*omega);
+					p=h_p_traj[i];
 
-					S_der_B=a*v_fermi*h_p_traj[i]*(h_p_traj[i]*h_p_traj[i] - p_bottom*p_bottom)/
-					sqrt(p_bottom*p_bottom*(h_p_traj[i]*h_p_traj[i] - p_bottom*p_bottom)
-					*(h_p_traj[i]*h_p_traj[i] - p_bottom*p_bottom)+
-					4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi);
+					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
 
+					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
+					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
+					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
 					h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double()
-					- met_params.e_lang*(S_der_A + S_der_B);
+								- met_params.e_lang*(S_der_A + S_der_B);
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
 			}
@@ -262,21 +267,21 @@ int main()
 	//termo parameters
 	const int N_steps_waiting=20000; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=100;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.015;//0.035*2;
+	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
+	const double a=0.0018;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=5000;
-	ham_params.m=1;
-	ham_params.omega=1;
-	ham_params.p_bottom=2;//corresponds to 'bottom' of potential
+	ham_params.v_fermi=1;
+	ham_params.m=10;
+	ham_params.omega=10;
+	ham_params.p_b=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
-	met_params.p_initial=ham_params.p_bottom/3;
+	met_params.p_initial=ham_params.p_b/3;
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
@@ -295,7 +300,7 @@ int main()
 	printf("===CPP CODE LAUNCH===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N_spots);
 	printf("v_fermi=%.2lf\n",ham_params.v_fermi);
-	printf("p_bottom=%.2lf\n",ham_params.p_bottom);
+	printf("p_b=%.2lf\n",ham_params.p_b);
 	printf("mass m=%.2lf\n",ham_params.m);
 	printf("omega=%.2lf\n",ham_params.omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
@@ -332,7 +337,7 @@ int main()
 	fprintf(out_gen_des,"v_fermi,%.4lf\n",ham_params.v_fermi);
 	fprintf(out_gen_des,"m,%.4lf\n",ham_params.m);
 	fprintf(out_gen_des,"omega,%.4lf\n",ham_params.omega);
-	fprintf(out_gen_des,"p_bottom,%.4lf\n",ham_params.p_bottom);
+	fprintf(out_gen_des,"p_b,%.4lf\n",ham_params.p_b);
 	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
 	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
 	fprintf(out_gen_des,"p_range,%.4lf\n",traj_p_range);
