@@ -160,7 +160,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	double p_bottom=ham_params.p_bottom;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
-	double p_prev_node,p_next_node,p_old,p_new,S_old,S_new,prob_acc,gamma;
+	double p_prev_node,p_next_node,S_der_A,S_der_B,S_old,S_new,prob_acc,gamma;
     for (int steps_counter=0; steps_counter < N_steps; steps_counter++)
     {
 		//backup trajectory before taking a step, so that if proposition is not accepted
@@ -184,12 +184,18 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				{
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
-					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*( a*v_fermi*h_p_traj_new[i]*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)/sqrt(p_bottom*p_bottom*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)+4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi) + (2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)  );
+
+					S_der_A=(2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)
+
+					S_der_B=a*v_fermi*h_p_traj_new[i]*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)/
+					sqrt(p_bottom*p_bottom*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)
+					*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)+
+					4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi)
+
+					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*(S_der_A + S_der_B);
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
 				copy_traj(h_pi_vect, h_pi_vect_new);
-				//temp_S_1=S(h_p_traj, ham_params);
-				//temp_S_2=S(h_p_traj_new, ham_params);
 
 			}
 			//perform iterations using Langevin algo
@@ -200,11 +206,18 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				{
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
-					h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double() - met_params.e_lang*( a*v_fermi*h_p_traj_new[i]*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)/sqrt(p_bottom*p_bottom*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)*(h_p_traj_new[i]*h_p_traj_new[i] - p_bottom*p_bottom)+4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi) + (2*h_p_traj_new[i]-(p_prev_node+p_next_node))/(a*m*omega*omega)  );
+
+					S_der_A=(2*h_p_traj[i]-(p_prev_node+p_next_node))/(a*m*omega*omega);
+
+					S_der_B=a*v_fermi*h_p_traj[i]*(h_p_traj[i]*h_p_traj[i] - p_bottom*p_bottom)/
+					sqrt(p_bottom*p_bottom*(h_p_traj[i]*h_p_traj[i] - p_bottom*p_bottom)
+					*(h_p_traj[i]*h_p_traj[i] - p_bottom*p_bottom)+
+					4*p_bottom*p_bottom*p_bottom*p_bottom*m*m*v_fermi*v_fermi);
+
+					h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double()
+					- met_params.e_lang*(S_der_A + S_der_B);
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
-				//temp_S_1=S(h_p_traj, ham_params);
-				//temp_S_2=S(h_p_traj_new, ham_params);
 			}
 		}
 		//accept or discard this trajectory using standard metropolis fork
@@ -253,7 +266,7 @@ int main()
 	ham_params.v_fermi=50;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_bottom=1;//corresponds to 'bottom' of potential
+	ham_params.p_bottom=4;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
@@ -266,7 +279,7 @@ int main()
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
-	const double p_range=2.5;
+	const double p_range=6.5;
 	const double x_range=15;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
