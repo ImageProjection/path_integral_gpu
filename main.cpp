@@ -293,15 +293,15 @@ int main()
 	//termo parameters
 	const int N_steps_waiting=200000; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=11000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0018;//0.035*2;
+	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
+	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=150;
+	ham_params.v_fermi=150*1.2;
 	ham_params.m=0.2;
-	ham_params.omega=50*30;
+	ham_params.omega=50;
 	ham_params.p_b=5;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
