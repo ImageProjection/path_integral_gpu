@@ -1,3 +1,6 @@
+compile_and_run_cpp:
+	g++ main.cpp && ./a.out
+
 compile:
 	nvcc -Wno-deprecated-gpu-targets -o main -arch=sm_35 main.cu
 
@@ -9,7 +12,6 @@ cr:
 
 run:
 	./main
-
 
 #for NB
 nb_full_run:

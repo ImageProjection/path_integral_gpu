@@ -150,12 +150,38 @@ double S(double* h_traj, struct hamiltonian_params_container ham_params)//action
 	S=a*(S_part_A + S_part_B); 
 	return S;
 }
-/*
-double S_k(double* h_traj, struct hamiltonian_params_container ham_params)//partial derivative {ds}/{dp_k}
+
+double S_debug_print(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
-	double 
+	double S,p;
+	double S_part_A=0;//first term
+	double S_part_B=0;//part with T in it
+	double T_sq,T_m;
+	double prev_node;
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	for(int k=0; k<N_spots; k++)
+	{
+		prev_node=h_traj[(k-1+N_spots)%N_spots];
+		p=h_traj[k];
+		S_part_A += (p-prev_node)*(p-prev_node) / (2*a*a*m*omega*omega);
+
+		T_sq=(p*p - p_b*p_b)*(p*p - p_b*p_b)/(4*p_b*p_b);
+		T_m=m*m*v_fermi*v_fermi;
+		S_part_B += v_fermi*sqrt(T_sq+T_m);
+	}
+	S=a*(S_part_A + S_part_B);
+	printf("S_part_A=%.8lf\n",S_part_A);
+	printf("S_part_B=%.8lf\n",S_part_B);
+	printf("T_sq=%.8lf\n",T_sq);
+	printf("T_m=%.8lf\n",T_m);
+
+
+	return S;
 }
-*/
  
 int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
 	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
@@ -265,18 +291,18 @@ int main()
     clock_t start,end;
 	start=clock();
 	//termo parameters
-	const int N_steps_waiting=20000; //number of Metropolis steps to termolise the system
+	const int N_steps_waiting=200000; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=11000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=1;
-	ham_params.m=10;
-	ham_params.omega=10;
-	ham_params.p_b=2;//corresponds to 'bottom' of potential
+	ham_params.v_fermi=150;
+	ham_params.m=0.2;
+	ham_params.omega=50*30;
+	ham_params.p_b=5;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
@@ -289,11 +315,11 @@ int main()
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
-	const double p_range=6.5;
+	const double p_range=10;
 	const double x_range=15;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
-	const double traj_p_range=2.5;
+	const double traj_p_range=10;
 	const double traj_x_range=10;
 
 	//display parameters to terminal
@@ -376,7 +402,7 @@ int main()
 	//init h_p_traj and h_pi_vect
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=my_normal_double();//TODO set to 0
+		h_p_traj[i]=0;//TODO set to 0
 	}
 	printf("initial taj action is: %.5lf\n",S(h_p_traj,ham_params));
 	double p_prev_node,p_next_node;
@@ -421,6 +447,30 @@ int main()
 		aver_V=average_square(h_x_traj)*(ham_params.m*ham_params.omega*ham_params.omega/2);
 		fprintf(out_energies,"%.3lf, %.3lf, %.3lf\n",aver_T,aver_V,ham_params.omega/4);
 	}
+	printf("===list of characteristic values for debug===\n");
+	double S_der_A,S_der_B,S_der_con,S_der_var,p;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	S_debug_print(h_p_traj,ham_params);
+	for(int i=200; i<270; i+=10)
+	{
+		p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
+		p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
+		p=h_p_traj[i];
+		S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
+		S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
+		S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
+		S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
+		printf("for i=%d\n",i);
+		printf("   S_der_A=%.8lf\n",S_der_A);
+		printf("   S_der_B=%.8lf\n",S_der_B);
+		printf("   S_der_var=%.8lf\n",S_der_var);
+		printf("   S_der_con=%.8lf\n",S_der_con);
+
+	}
+	printf("===end of list of characteristic values for debug===\n");
 	
 	//copy, normalize and plot histograms to file
 	normalize_hist(h_p_hist, h_p_dens_plot, -p_range, p_range);
