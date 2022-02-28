@@ -291,8 +291,8 @@ int main()
     clock_t start,end;
 	start=clock();
 	//termo parameters
-	const int N_steps_waiting=200000; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
+	const int N_steps_waiting=1200000; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
