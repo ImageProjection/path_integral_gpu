@@ -1,7 +1,7 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
+#include <cmath>
 
 #define print_traj_flag 1
 #define N_spots 1024
@@ -211,11 +211,13 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
 				//especially when doing more then 1 langevin step (is it just translation, so we can keep pi?)
 				//phi(1)=phi(0)+eps*pi(1/2)
+				#pragma omp parallel for
 				for(int i=0; i<N_spots; i++)
 				{
 					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
 				}
 				//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
+				#pragma omp parallel for
 				for(int i=0; i<N_spots; i++)
 				{
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
@@ -238,6 +240,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
 			{
 				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
+				#pragma omp parallel for
 				for(int i=0; i<N_spots; i++)
 				{
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
@@ -291,9 +294,9 @@ int main()
     clock_t start,end;
 	start=clock();
 	//termo parameters
-	const int N_steps_waiting=1200000; //number of Metropolis steps to termolise the system
+	const int N_steps_waiting=12000; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 

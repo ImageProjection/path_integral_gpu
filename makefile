@@ -21,6 +21,9 @@ nb_full_run:
 pc_full_run:
 	g++ main.cpp && ./a.out && python3 plotter.py && python3 hist_plotter.py
 
+nb_full_run:
+	g++ main.cpp -fopenmp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
+
 git_log:
 	git log --all --graph --decorate
 
