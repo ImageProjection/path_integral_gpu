@@ -150,7 +150,7 @@ double S(double* h_traj, struct hamiltonian_params_container ham_params)//action
 	S=a*(S_part_A + S_part_B); 
 	return S;
 }
-
+/*
 double S_debug_print(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
 	double S,p;
@@ -182,7 +182,7 @@ double S_debug_print(double* h_traj, struct hamiltonian_params_container ham_par
 
 	return S;
 }
- 
+*/
 int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
 	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
 	struct hamiltonian_params_container ham_params,

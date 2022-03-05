@@ -15,14 +15,11 @@ run:
 
 #for NB
 nb_full_run:
-	g++ main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
+	g++ -O2 main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
 	
 #for PC
 pc_full_run:
 	g++ main.cpp && ./a.out && python3 plotter.py && python3 hist_plotter.py
-
-nb_full_run:
-	g++ main.cpp -fopenmp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
 
 git_log:
 	git log --all --graph --decorate
