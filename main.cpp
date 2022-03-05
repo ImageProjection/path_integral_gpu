@@ -1,6 +1,6 @@
 #include <cstdlib>
 #include <cstdio>
-#include <ctime>
+#include <sys/time.h>
 #include <cmath>
 
 #define print_traj_flag 1
@@ -211,20 +211,19 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
 				//especially when doing more then 1 langevin step (is it just translation, so we can keep pi?)
 				//phi(1)=phi(0)+eps*pi(1/2)
-				#pragma omp parallel for
 				for(int i=0; i<N_spots; i++)
 				{
 					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
 				}
 				//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
-				#pragma omp parallel for
 				for(int i=0; i<N_spots; i++)
 				{
-					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
-					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+					//p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
+					//p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
 					p=h_p_traj_new[i];
 
-					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
+					S_der_A=(2*p-(h_p_traj_new[(i-1+N_spots)%N_spots]+h_p_traj_new[(i+1+N_spots)%N_spots]))
+					/(a*m*omega*omega);
 
 					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
 					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
@@ -240,12 +239,10 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
 			{
 				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
-				#pragma omp parallel for
 				for(int i=0; i<N_spots; i++)
 				{
 					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
-
 					p=h_p_traj[i];
 
 					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
@@ -290,12 +287,12 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 
 int main()
 {
-	srand(time(NULL));
-    clock_t start,end;
-	start=clock();
+    struct timeval start, end;
+	gettimeofday(&start, NULL);
+	srand(start.tv_usec);
 	//termo parameters
 	const int N_steps_waiting=12000; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
@@ -456,6 +453,7 @@ int main()
 	double p_b=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
+	/*
 	S_debug_print(h_p_traj,ham_params);
 	for(int i=200; i<270; i+=10)
 	{
@@ -474,6 +472,7 @@ int main()
 
 	}
 	printf("===end of list of characteristic values for debug===\n");
+	*/
 	
 	//copy, normalize and plot histograms to file
 	normalize_hist(h_p_hist, h_p_dens_plot, -p_range, p_range);
@@ -499,8 +498,9 @@ int main()
 	printf("===launch status report===\n");
 	
 	printf("total number of histogram-discarded x points: %d (%.2lf%)\n",discarded_x_points,(double)discarded_x_points/(N_sample_trajectories*N_spots));
-	end=clock();
-	double total_time=(double)(end-start)/CLOCKS_PER_SEC;//in seconds
+	gettimeofday(&end, NULL);
+	double total_time=((end.tv_sec  - start.tv_sec) * 1000000u + 
+        end.tv_usec - start.tv_usec) / 1.e6;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
 	printf("===CPP CODE FINISHED WORKING===\n");
 }

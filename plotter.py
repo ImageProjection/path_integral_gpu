@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 import time
 from pathlib import Path
 
-N_vid_fr=300
+
 #simulaton parameters
 values=[]
 spf=open("out_gen_des.txt",'r')
@@ -28,7 +28,7 @@ x_range=values[11]
 traj_p_range=values[12]
 traj_x_range=values[13]
 
-
+N_vid_fr=min(300,N_sample_trajectories);
 
 
 fig=plt.figure()

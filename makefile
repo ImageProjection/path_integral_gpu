@@ -15,7 +15,7 @@ run:
 
 #for NB
 nb_full_run:
-	g++ main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py 
+	g++ main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
 	
 #for PC
 pc_full_run:
