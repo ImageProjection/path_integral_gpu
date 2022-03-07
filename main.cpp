@@ -291,9 +291,9 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_steps_waiting=12000; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_waiting=2e6; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=150000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
