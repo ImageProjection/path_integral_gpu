@@ -56,7 +56,7 @@ void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, do
 	}
 }
 
-void normalize_hist(unsigned int* h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
+void normalize_hist(unsigned int* const h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
 {
 	int val_sum=0;
 	double integral;//==val_sum*delta_x
@@ -107,7 +107,7 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m
 	}
 }
 
-double average_square(double* h_traj)
+double average_square(double*  const h_traj)
 {
 	double sum=0;
 	for (int i = 0; i < N_spots; i++)
@@ -117,7 +117,7 @@ double average_square(double* h_traj)
 	return sum/N_spots;
 }
 
-void copy_traj(double* destination, double* source)
+void copy_traj(double* destination, double* const source)
 {
 	for(int i=0; i<N_spots; i++)
 	{
@@ -125,7 +125,7 @@ void copy_traj(double* destination, double* source)
 	}
 }
 
-double S(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
+double S(double* const h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
 	double S,p;
 	double S_part_A=0;//first term
@@ -291,9 +291,9 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_steps_waiting=2e6; //number of Metropolis steps to termolise the system
+	const int N_waiting_trajectories=300; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=150000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
@@ -330,7 +330,7 @@ int main()
 	printf("mass m=%.2lf\n",ham_params.m);
 	printf("omega=%.2lf\n",ham_params.omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
-	printf("N_steps_waiting=%d\n",N_steps_waiting);
+	printf("N_waiting_trajectories=%d\n",N_waiting_trajectories);
 	printf("N_sample_trajectories=%d\n",N_sample_trajectories);
 	printf("N_steps_per_traj=%d\n",N_steps_per_traj);
 	printf("N_cycles_per_step=%d\n",met_params.N_cycles_per_step);
@@ -355,7 +355,7 @@ int main()
 
 	//print general simulation description to file
 	fprintf(out_gen_des,"N_spots,%d\n",N_spots);
-	fprintf(out_gen_des,"N_steps_waiting,%d\n",N_steps_waiting);
+	fprintf(out_gen_des,"N_waiting_trajectories,%d\n",N_waiting_trajectories);
 	fprintf(out_gen_des,"N_sample_trajectories,%d\n",N_sample_trajectories);
 	fprintf(out_gen_des,"N_steps_per_traj,%d\n",N_steps_per_traj);
 	fprintf(out_gen_des,"a,%.4lf\n",a);
@@ -415,9 +415,15 @@ int main()
 
 	//run termolisation sweeps
 	//TODO configure to increase langevin part?
-	double accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_waiting, ham_params, met_params);
-	printf("Acceptance rate after running termolisation steps: %.4lf%\n",accepted/N_steps_waiting*100);
+	//double accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_waiting, ham_params, met_params);
 	
+	double accepted;
+	//perform trmolisation step without sampling
+	for (int i=0; i<N_waiting_trajectories; i++)
+	{
+		accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+	}
+	//printf("Acceptance rate after running termolisation steps: %.4lf%\n",accepted/N_steps_waiting*100);
 	//perform sweeps to build histogram and optionaly output trajectories
 	for (int i=0; i<N_sample_trajectories; i++)
 	{

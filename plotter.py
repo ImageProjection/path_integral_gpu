@@ -14,7 +14,7 @@ for line in spf:
     values.append(float(tmp_list[1]))
 
 N_spots=round(values[0])
-N_sweeps_waiting=round(values[1])
+N_waiting_trajectories=round(values[1])
 N_sample_trajectories=round(values[2])
 Traj_sample_period=round(values[3])
 a=values[4]
