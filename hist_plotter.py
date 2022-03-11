@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from numpy.core.function_base import linspace
 from pathlib import Path
 
+#plots histogram and also energies
+
 #simulaton parameters
 values=[]
 spf=open("out_gen_des.txt",'r')
