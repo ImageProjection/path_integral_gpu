@@ -154,6 +154,27 @@ double average_potential(double* const h_x_traj, struct hamiltonian_params_conta
 	return result;
 }
 
+//average p dot term over 1 sample traj
+double average_p_dot(double* const h_p_traj, struct hamiltonian_params_container ham_params)
+{
+	double result=0;
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	double prev_node,p;
+	for(int i=0; i<N_spots; i++)
+	{
+		prev_node=h_p_traj[(i+N_spots)%N_spots];
+		p=h_p_traj[i];
+		result+=(p-prev_node)*(p-prev_node);
+	}
+	result = result / (2*a*m*omega*omega);
+	return result;
+}
+
+
 void copy_traj(double* destination, double* const source)
 {
 	for(int i=0; i<N_spots; i++)
@@ -337,10 +358,10 @@ int main()
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=150*1.2;
+	ham_params.v_fermi=7;
 	ham_params.m=0.2;
 	ham_params.omega=50;
-	ham_params.p_b=10;//corresponds to 'bottom' of potential
+	ham_params.p_b=5;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
@@ -381,7 +402,7 @@ int main()
 	out_gen_des=fopen("out_gen_des.txt","w");
 	FILE *out_energies;
 	out_energies=fopen("out_energies.txt","w");
-	double aver_T,aver_V;
+	double aver_T,aver_V,aver_p_dot;
 	FILE *out_p_traj;
 	out_p_traj=fopen("out_p_traj.txt","w");
 	FILE *out_p_dens_plot;
@@ -451,12 +472,10 @@ int main()
 		h_pi_vect[i]=-met_params.e_molec*0.5*( a*h_p_traj[i]/ham_params.m + (2*h_p_traj[i]-(p_prev_node+p_next_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega)  );
 	}
 
-	//run termolisation sweeps
-	//TODO configure to increase langevin part?
-	//double accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_waiting, ham_params, met_params);
 	
 	double accepted;
-	//perform trmolisation step without sampling
+	
+	//perform termolisation steps without sampling
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
 	met_params.N_cycles_per_step=1;
@@ -469,7 +488,8 @@ int main()
 		}
 		aver_T=average_kinetic(h_p_traj,ham_params);
 		aver_V=average_potential(h_x_traj,ham_params);
-		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_T+aver_V);
+		aver_p_dot=average_p_dot(h_p_traj,ham_params);		
+		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot);
 	}
 
 	//perform sweeps to build histogram and optionaly output trajectories
@@ -502,7 +522,8 @@ int main()
 		//evaluate energies corresponding to each trajectory
 		aver_T=average_kinetic(h_p_traj,ham_params);
 		aver_V=average_potential(h_x_traj,ham_params);
-		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_T+aver_V);
+		aver_p_dot=average_p_dot(h_p_traj,ham_params);		
+		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot);
 	}
 	/*
 	printf("===list of characteristic values for debug===\n");
