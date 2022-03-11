@@ -117,6 +117,43 @@ double average_square(double*  const h_traj)
 	return sum/N_spots;
 }
 
+//average sqrt-thing over 1 sample traj
+double average_kinetic(double* const h_p_traj, struct hamiltonian_params_container ham_params)
+{
+	double result=0;
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	double p;
+	for(int i=0; i<N_spots; i++)
+	{
+		p=h_p_traj[i];
+		result+=sqrt( (p*p-p_b*p_b)*(p*p-p_b*p_b)/(4*p_b*p_b) + m*m*v_fermi*v_fermi);
+	}
+	result = result*v_fermi/N_spots;
+
+	return result;
+}
+
+//average harmonic-potential-energy over 1 sample traj
+double average_potential(double* const h_x_traj, struct hamiltonian_params_container ham_params)
+{
+	double result=0;
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	for(int i=0; i<N_spots; i++)
+	{
+		result+=h_x_traj[i]*h_x_traj[i];
+	}
+	result = result*0.5*m*omega*omega/N_spots;
+	return result;
+}
+
 void copy_traj(double* destination, double* const source)
 {
 	for(int i=0; i<N_spots; i++)
@@ -241,8 +278,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
 				for(int i=0; i<N_spots; i++)
 				{
-					p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
-					p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+					p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
+					p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
 					p=h_p_traj[i];
 
 					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
@@ -308,7 +345,7 @@ int main()
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b/3;
-	met_params.N_cycles_per_step=1;
+	met_params.N_cycles_per_step=4;
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
 	met_params.e_lang=0.000005;
@@ -449,17 +486,18 @@ int main()
 		}
 
 		//evaluate energies corresponding to each trajectory
-		aver_T=average_square(h_p_traj)/(2*ham_params.m);
-		aver_V=average_square(h_x_traj)*(ham_params.m*ham_params.omega*ham_params.omega/2);
-		fprintf(out_energies,"%.3lf, %.3lf, %.3lf\n",aver_T,aver_V,ham_params.omega/4);
+		aver_T=average_kinetic(h_p_traj,ham_params);
+		aver_V=average_potential(h_x_traj,ham_params);
+		fprintf(out_energies,"%.6lf, %.6lf, %.6lf\n",aver_T,aver_V,aver_T+aver_V);
 	}
+	/*
 	printf("===list of characteristic values for debug===\n");
 	double S_der_A,S_der_B,S_der_con,S_der_var,p;
 	double m=ham_params.m;
 	double p_b=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
-	/*
+	
 	S_debug_print(h_p_traj,ham_params);
 	for(int i=200; i<270; i+=10)
 	{
