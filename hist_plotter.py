@@ -61,6 +61,13 @@ ax2.set_xlabel("coordinate x")
 ax2.plot(x_data,y_data, color='green',linewidth = 1.1)
 ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 
+#plot energies
+values=[]
+spf=open("out_energies.txt",'r')
+for line in spf:
+    tmp_list=list(line.split(","))
+    values.append(float(tmp_list[1]))
+
 
 #display results
 plt.locator_params(nbins=20)
@@ -68,4 +75,3 @@ plt.tight_layout()
 
 Path("traj_hist").mkdir(exist_ok=True)
 plt.savefig("traj_hist/m="+str(m)+"_p_and_x_dens_plots.png",bbox_inches='tight',dpi=350)
-#plt.show()

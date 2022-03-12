@@ -4,7 +4,7 @@
 #include <cmath>
 
 #define print_traj_flag 1
-#define N_spots 1024
+#define N_spots 2048
 #define N_bins 1024
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
@@ -166,11 +166,11 @@ double average_p_dot(double* const h_p_traj, struct hamiltonian_params_container
 	double prev_node,p;
 	for(int i=0; i<N_spots; i++)
 	{
-		prev_node=h_p_traj[(i+N_spots)%N_spots];
+		prev_node=h_p_traj[(i+N_spots-1)%N_spots];
 		p=h_p_traj[i];
 		result+=(p-prev_node)*(p-prev_node);
 	}
-	result = result / (2*a*m*omega*omega);
+	result = result / (2*a*m*omega*omega) / N_spots;
 	return result;
 }
 
@@ -247,7 +247,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
 {	
-	double temp,temp_S_1, temp_S_2;									 
+	double temp,temp_S_1, temp_S_2, lang_var;									 
 	int accepted=0;	
 	double a=ham_params.a;
 	double m=ham_params.m;
@@ -309,7 +309,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
 					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
 					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-					h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double()
+					lang_var=sqrt(2*met_params.e_lang)*my_normal_double();
+					h_p_traj_new[i]=h_p_traj[i] + lang_var;
 								- met_params.e_lang*(S_der_A + S_der_B);
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
@@ -358,9 +359,9 @@ int main()
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=7;
+	ham_params.v_fermi=7/20.5/3;
 	ham_params.m=0.2;
-	ham_params.omega=50;
+	ham_params.omega=6;
 	ham_params.p_b=5;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
@@ -459,10 +460,19 @@ int main()
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
 
 	//init h_p_traj and h_pi_vect
+	//
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=ham_params.p_b;//TODO set to 0
+		h_p_traj[i]=0;
 	}
+	printf("T(p==0): %.3lf\n", average_kinetic(h_p_traj,ham_params));
+	//
+	for(int i=0; i<N_spots; i++)
+	{
+		h_p_traj[i]=ham_params.p_b;
+	}
+	printf("T(p==p_b): %.3lf\n", average_kinetic(h_p_traj,ham_params));
+
 	printf("initial taj action is: %.5lf\n",S(h_p_traj,ham_params));
 	double p_prev_node,p_next_node;
 	for(int i=0; i<N_spots; i++)
@@ -474,7 +484,7 @@ int main()
 
 	
 	double accepted;
-	
+
 	//perform termolisation steps without sampling
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
@@ -495,7 +505,7 @@ int main()
 	//perform sweeps to build histogram and optionaly output trajectories
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=4;
+	met_params.N_cycles_per_step=1;
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
