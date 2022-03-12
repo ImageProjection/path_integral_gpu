@@ -4,7 +4,7 @@
 #include <cmath>
 
 #define print_traj_flag 1
-#define N_spots 2048
+#define N_spots 1024
 #define N_bins 1024
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
@@ -247,7 +247,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
 {	
-	double temp,temp_S_1, temp_S_2, lang_var;									 
+	double temp, delta_molec, delta_lang, lang_var;									 
 	int accepted=0;	
 	double a=ham_params.a;
 	double m=ham_params.m;
@@ -273,6 +273,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				for(int i=0; i<N_spots; i++)
 				{
 					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
+					delta_molec=h_p_traj_new[i]-h_p_traj[i];
 				}
 				//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
 				for(int i=0; i<N_spots; i++)
@@ -300,6 +301,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
 				for(int i=0; i<N_spots; i++)
 				{
+					/*
 					p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
 					p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
 					p=h_p_traj[i];
@@ -310,8 +312,10 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
 					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
 					lang_var=sqrt(2*met_params.e_lang)*my_normal_double();
-					h_p_traj_new[i]=h_p_traj[i] + lang_var;
+					h_p_traj_new[i]=h_p_traj[i] + lang_var
 								- met_params.e_lang*(S_der_A + S_der_B);
+					delta_lang=h_p_traj_new[i]-h_p_traj[i];*/
+					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*my_normal_double();
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
 			}
@@ -352,17 +356,17 @@ int main()
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
+	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=7/20.5/3;
-	ham_params.m=0.2;
-	ham_params.omega=6;
-	ham_params.p_b=5;//corresponds to 'bottom' of potential
+	ham_params.v_fermi=100;
+	ham_params.m=0.1;
+	ham_params.omega=50;
+	ham_params.p_b=10;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
@@ -472,6 +476,11 @@ int main()
 		h_p_traj[i]=ham_params.p_b;
 	}
 	printf("T(p==p_b): %.3lf\n", average_kinetic(h_p_traj,ham_params));
+	//actual init
+	for(int i=0; i<N_spots; i++)
+	{
+		h_p_traj[i]=ham_params.p_b;
+	}
 
 	printf("initial taj action is: %.5lf\n",S(h_p_traj,ham_params));
 	double p_prev_node,p_next_node;
@@ -483,18 +492,19 @@ int main()
 	}
 
 	
-	double accepted;
+	double accepted,acc_rate;
 
 	//perform termolisation steps without sampling
-	met_params.T_molec=9;
+	met_params.T_molec=1;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=1;
+	met_params.N_cycles_per_step=5;
 	for (int i=0; i<N_waiting_trajectories; i++)
 	{
 		accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
-		if (i%10==0)
+		if (i%1==0)
 		{
-			printf("Acceptance rate after reaching termolisation p-traj No (%d) %.4lf%\n",i,accepted/N_steps_per_traj*100);
+			acc_rate=accepted/N_steps_per_traj*100;
+			printf("Acceptance rate after reaching termolisation p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
 		aver_T=average_kinetic(h_p_traj,ham_params);
 		aver_V=average_potential(h_x_traj,ham_params);
@@ -503,8 +513,8 @@ int main()
 	}
 
 	//perform sweeps to build histogram and optionaly output trajectories
-	met_params.T_molec=9;
-	met_params.T_lang=1;//do not touch, unless it is pure Langevin
+	met_params.T_molec=19;
+	met_params.T_lang=4;//do not touch, unless it is pure Langevin
 	met_params.N_cycles_per_step=1;
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
@@ -512,7 +522,8 @@ int main()
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
 		if (i%1==0)
 		{
-			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,accepted/N_steps_per_traj*100);
+			acc_rate=accepted/N_steps_per_traj*100;
+			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
 
 		//evaluate x-trajectory
