@@ -264,6 +264,30 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 		//evaluate trajectory for metropolis proposition (==make a step)
 		for (int cycles_counter=0; cycles_counter < met_params.N_cycles_per_step; cycles_counter++)
 		{
+			//perform iterations using Langevin algo
+			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
+			{
+				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
+				for(int i=0; i<N_spots; i++)
+				{
+					
+					p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
+					p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
+					p=h_p_traj[i];
+
+					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
+
+					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
+					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
+					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
+					lang_var=sqrt(2*met_params.e_lang)*my_normal_double();
+					h_p_traj_new[i]=h_p_traj[i] + lang_var
+								- met_params.e_lang*(S_der_A + S_der_B);
+					delta_lang=h_p_traj_new[i]-h_p_traj[i];
+					//h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*my_normal_double();
+				}
+				copy_traj(h_p_traj, h_p_traj_new);
+			}
 			//perform iterations using molecular dynamics algo
 			for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
 			{
@@ -294,30 +318,6 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				copy_traj(h_p_traj, h_p_traj_new);
 				copy_traj(h_pi_vect, h_pi_vect_new);
 
-			}
-			//perform iterations using Langevin algo
-			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
-			{
-				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
-				for(int i=0; i<N_spots; i++)
-				{
-					/*
-					p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
-					p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
-					p=h_p_traj[i];
-
-					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
-
-					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
-					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
-					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-					lang_var=sqrt(2*met_params.e_lang)*my_normal_double();
-					h_p_traj_new[i]=h_p_traj[i] + lang_var
-								- met_params.e_lang*(S_der_A + S_der_B);
-					delta_lang=h_p_traj_new[i]-h_p_traj[i];*/
-					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*my_normal_double();
-				}
-				copy_traj(h_p_traj, h_p_traj_new);
 			}
 		}
 		//accept or discard this trajectory using standard metropolis fork
