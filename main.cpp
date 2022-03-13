@@ -355,9 +355,9 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
+	const int N_waiting_trajectories=50; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=40;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
@@ -479,7 +479,7 @@ int main()
 	//actual init
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=ham_params.p_b;
+		h_p_traj[i]=ham_params.p_b/3;
 	}
 
 	printf("initial taj action is: %.5lf\n",S(h_p_traj,ham_params));
@@ -495,17 +495,34 @@ int main()
 	double accepted,acc_rate;
 
 	//perform termolisation steps without sampling
-	met_params.T_molec=1;
+	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=5;
+	met_params.N_cycles_per_step=3;
 	for (int i=0; i<N_waiting_trajectories; i++)
 	{
-		accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+		//evolve p-trajectory
+        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
 		if (i%1==0)
 		{
 			acc_rate=accepted/N_steps_per_traj*100;
-			printf("Acceptance rate after reaching termolisation p-traj No (%d) %.4lf%\n",i,acc_rate);
+			printf("Acceptance rate after reaching termo p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
+
+		//evaluate x-trajectory
+		h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
+
+		//add both trajectories points to cumulative histograms
+		//h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
+		//h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
+
+		//print trajectories with appended acc rate (evaluated over steps made for this traj)		
+		if (print_traj_flag)
+		{
+			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
+			print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
+		}
+
+		//evaluate energies corresponding to each trajectory
 		aver_T=average_kinetic(h_p_traj,ham_params);
 		aver_V=average_potential(h_x_traj,ham_params);
 		aver_p_dot=average_p_dot(h_p_traj,ham_params);		
@@ -513,9 +530,9 @@ int main()
 	}
 
 	//perform sweeps to build histogram and optionaly output trajectories
-	met_params.T_molec=19;
-	met_params.T_lang=4;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=1;
+	met_params.T_molec=9;
+	met_params.T_lang=1;//do not touch, unless it is pure Langevin
+	met_params.N_cycles_per_step=3;
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
