@@ -355,9 +355,9 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=50; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=40;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
+	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=1000;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
@@ -497,7 +497,7 @@ int main()
 	//perform termolisation steps without sampling
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=3;
+	met_params.N_cycles_per_step=10;
 	for (int i=0; i<N_waiting_trajectories; i++)
 	{
 		//evolve p-trajectory
@@ -532,7 +532,7 @@ int main()
 	//perform sweeps to build histogram and optionaly output trajectories
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=3;
+	met_params.N_cycles_per_step=10;
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
