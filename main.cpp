@@ -281,14 +281,25 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
 					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
 					lang_var=sqrt(2*met_params.e_lang)*my_normal_double();
-					h_p_traj_new[i]=h_p_traj[i] + lang_var
-								- met_params.e_lang*(S_der_A + S_der_B);
+					h_p_traj_new[i]=h_p_traj[i] + lang_var - met_params.e_lang*(S_der_A + S_der_B);
 					delta_lang=h_p_traj_new[i]-h_p_traj[i];
 					//h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*my_normal_double();
 				}
 				copy_traj(h_p_traj, h_p_traj_new);
 			}
 			//perform iterations using molecular dynamics algo
+			//first init pi vector to make it independent of langevin shifts to prevent blowups
+			for(int i=0; i<N_spots; i++)
+			{
+				p=h_p_traj[i];
+				S_der_A=(2*p-(h_p_traj[(i-1+N_spots)%N_spots]+h_p_traj[(i+1+N_spots)%N_spots]))
+					/(a*m*omega*omega);
+
+				S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
+				S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
+				S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
+				h_pi_vect[i]= -0.5*met_params.e_molec*(S_der_A + S_der_B);
+			}
 			for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
 			{
 				//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
@@ -356,24 +367,24 @@ int main()
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=1000;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
+	const int N_sample_trajectories=50;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=100;
-	ham_params.m=0.1;
-	ham_params.omega=50;
-	ham_params.p_b=10;//corresponds to 'bottom' of potential
+	ham_params.v_fermi=7/20.5/3;
+	ham_params.m=0.2;
+	ham_params.omega=6;
+	ham_params.p_b=5;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b/3;
-	met_params.N_cycles_per_step=15;
-	met_params.T_molec=9;
+	met_params.N_cycles_per_step=1;
+	met_params.T_molec=18;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
 	met_params.e_lang=0.000005;
 	met_params.e_molec=met_params.e_lang;//for correspondence
@@ -495,9 +506,9 @@ int main()
 	double accepted,acc_rate;
 
 	//perform termolisation steps without sampling
-	met_params.T_molec=9;
-	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=10;
+	//met_params.T_molec=9;
+	//met_params.T_lang=0;//do not touch, unless it is pure Langevin
+	//met_params.N_cycles_per_step=10;
 	for (int i=0; i<N_waiting_trajectories; i++)
 	{
 		//evolve p-trajectory
@@ -530,9 +541,9 @@ int main()
 	}
 
 	//perform sweeps to build histogram and optionaly output trajectories
-	met_params.T_molec=9;
-	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.N_cycles_per_step=10;
+	//met_params.T_molec=9;
+	//met_params.T_lang=0;//do not touch, unless it is pure Langevin
+	//met_params.N_cycles_per_step=10;
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
