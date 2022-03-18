@@ -6,6 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
+#define sigma 0.13
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -200,12 +201,9 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 		p=h_traj[k];
 		S_part_A += (p-h_traj[(k-1+N_spots)%N_spots])*(p-h_traj[(k-1+N_spots)%N_spots]);
 
-		T_sq=(p*p - p_b*p_b)*(p*p - p_b*p_b)/(4*p_b*p_b);
-		T_m=m*m*v_fermi*v_fermi;
-		S_part_B += sqrt(T_sq+T_m);
+		S_part_B += p*p/(2*m);
 	}
 	S_part_A /= (2*a*a*m*omega*omega);
-	S_part_B *= v_fermi;
 	S=a*(S_part_A + S_part_B); 
 	return S;
 }
@@ -255,107 +253,41 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	double p_prev_node,p_next_node,S_der_A,S_der_B,S_old,S_new,prob_acc,gamma;
-	double p,S_der_var,S_der_con;
+	double p,p_new,p_old,S_der_var,S_der_con;
     for (int steps_counter=0; steps_counter < N_steps; steps_counter++)
     {
-		//backup trajectory before taking a step, so that if proposition is not accepted
-		//h_p_traj, from which mp4 is made, can be restored
-		copy_traj(h_p_traj_prev_step, h_p_traj);
-		//evaluate trajectory for metropolis proposition (==make a step)
-		for (int cycles_counter=0; cycles_counter < met_params.N_cycles_per_step; cycles_counter++)
+		for(int i=0; i<N_spots; i++)//local upd for each node
 		{
-			//perform iterations using Langevin algo
-			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
+			//proposition
+			p_old=h_p_traj[i];
+			p_new=p_old+sigma*my_normal_double();
+			h_p_traj_new[i]=p_new;
+			//metrofork
+			S_new=S(h_p_traj_new, ham_params);
+			S_old=S(h_p_traj, ham_params);
+			//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
+			if (S_new < S_old)
 			{
-				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
-				for(int i=0; i<N_spots; i++)
-				{
-					
-					p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
-					p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
-					p=h_p_traj[i];
-
-					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
-
-					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
-					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
-					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-					lang_var=sqrt(2*met_params.e_lang)*my_normal_double();
-					h_p_traj_new[i]=h_p_traj[i] + lang_var - met_params.e_lang*(S_der_A + S_der_B);
-					delta_lang=h_p_traj_new[i]-h_p_traj[i];
-					//h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*my_normal_double();
-				}
-				copy_traj(h_p_traj, h_p_traj_new);
+				;
+				accepted++;
+				copy_traj(h_p_traj,h_p_traj_new);//watch out, may remove that later
 			}
-			//perform iterations using molecular dynamics algo
-			//first init pi vector to make it independent of langevin shifts to prevent blowups
-			/*for(int i=0; i<N_spots; i++)
-			{
-				p=h_p_traj[i];
-				S_der_A=(2*p-(h_p_traj[(i-1+N_spots)%N_spots]+h_p_traj[(i+1+N_spots)%N_spots]))
-					/(a*m*omega*omega);
-
-				S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
-				S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
-				S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-				h_pi_vect[i]= -0.5*met_params.e_molec*(S_der_A + S_der_B);
-			}*/
-			for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
-			{
-				//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
-				//especially when doing more then 1 langevin step (is it just translation, so we can keep pi?)
-				//phi(1)=phi(0)+eps*pi(1/2)
-				for(int i=0; i<N_spots; i++)
+				else
 				{
-					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
-					delta_molec=h_p_traj_new[i]-h_p_traj[i];
-				}
-				//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
-				for(int i=0; i<N_spots; i++)
-				{
-					//p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
-					//p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
-					p=h_p_traj_new[i];
-
-					S_der_A=(2*p-(h_p_traj_new[(i-1+N_spots)%N_spots]+h_p_traj_new[(i+1+N_spots)%N_spots]))
-					/(a*m*omega*omega);
-
-					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
-					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
-					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-
-					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*(S_der_A + S_der_B);
-				}
-				copy_traj(h_p_traj, h_p_traj_new);
-				copy_traj(h_pi_vect, h_pi_vect_new);
-
+					prob_acc=exp(S_old-S_new);
+					gamma=(double)rand()/RAND_MAX;
+					if (gamma < prob_acc)//then accept
+						{
+							;
+							accepted++;
+							copy_traj(h_p_traj,h_p_traj_new);//watch out, may remove that later
+						}
+						else//do not accept, thus no change to h_p_traj //and revert new traj
+						{
+							h_p_traj_new[i]=p_old;
+						}
 			}
 		}
-		//accept or discard this trajectory using standard metropolis fork
-		S_old=S(h_p_traj_prev_step, ham_params);
-		S_new=S(h_p_traj, ham_params);
-		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
-		if (S_new < S_old)
-		{
-			;
-			accepted++;
-		}
-			else
-			{
-				temp=exp(S_old-S_new);
-				prob_acc=exp(S_old-S_new);
-				gamma=(double)rand()/RAND_MAX;
-				if (gamma < prob_acc)//then accept
-					{
-						;
-						accepted++;
-					}
-					else//do not accept, thus revert
-					{
-						copy_traj(h_p_traj, h_p_traj_prev_step);
-					}
-			}
-
 	}
 	return accepted;//how many trajs of N_steps_per_traj were accepted
 }
@@ -368,15 +300,15 @@ int main()
 	//termo parameters
 	const int N_waiting_trajectories=135; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=15000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=150*1.2;
-	ham_params.m=0.2;
-	ham_params.omega=50;
+	ham_params.m=1;
+	ham_params.omega=1;
 	ham_params.p_b=10;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
@@ -515,7 +447,7 @@ int main()
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
 		if (i%1==0)
 		{
-			acc_rate=accepted/N_steps_per_traj*100;
+			acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
 			printf("Acceptance rate after reaching termo p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
 
@@ -550,7 +482,7 @@ int main()
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
 		if (i%1==0)
 		{
-			acc_rate=accepted/N_steps_per_traj*100;
+			acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
 			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
 
