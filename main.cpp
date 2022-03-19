@@ -197,6 +197,25 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 	S=a*(S_part_A + S_part_B); 
 	return S;
 }
+
+double S_loc(double* const h_traj, struct hamiltonian_params_container ham_params,int i)//action, PBC trajectory
+{
+	double S,p;
+	double S_part_A=0;//first term
+	double S_part_B=0;//part with T in it
+	double T_sq,T_m;
+	double prev_node,next_node;
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	prev_node=h_traj[(i-1+N_spots)%N_spots];
+	next_node=h_traj[(i+1+N_spots)%N_spots];
+	S=h_traj[i]*h_traj[i]*( 1/(a*m*omega*omega)+1/(2*m) ) - h_traj[i]*( prev_node + next_node )/(a*m*omega*omega);
+
+	return S;
+}
 /*
 double S_debug_print(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
@@ -253,8 +272,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			p_new=p_old+sigma*my_normal_double();
 			h_p_traj_new[i]=p_new;
 			//metrofork
-			S_new=S(h_p_traj_new, ham_params);
-			S_old=S(h_p_traj, ham_params);
+			S_new=S_loc(h_p_traj_new, ham_params,i);
+			S_old=S_loc(h_p_traj, ham_params,i);
 			//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 			if (S_new < S_old)
 			{
