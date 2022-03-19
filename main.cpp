@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 0.13
+#define sigma 0.06
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -108,16 +108,6 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m
 	}
 }
 
-double average_square(double*  const h_traj)
-{
-	double sum=0;
-	for (int i = 0; i < N_spots; i++)
-	{
-		sum+=h_traj[i]*h_traj[i];
-	}
-	return sum/N_spots;
-}
-
 //average sqrt-thing over 1 sample traj
 double average_kinetic(double* const h_p_traj, struct hamiltonian_params_container ham_params)
 {
@@ -131,9 +121,9 @@ double average_kinetic(double* const h_p_traj, struct hamiltonian_params_contain
 	for(int i=0; i<N_spots; i++)
 	{
 		p=h_p_traj[i];
-		result+=sqrt( (p*p-p_b*p_b)*(p*p-p_b*p_b)/(4*p_b*p_b) + m*m*v_fermi*v_fermi);
+		result+=p*p/(2*m);
 	}
-	result = result*v_fermi/N_spots;
+	result = result/N_spots;
 
 	return result;
 }
@@ -282,14 +272,14 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 							accepted++;
 							copy_traj(h_p_traj,h_p_traj_new);//watch out, may remove that later
 						}
-						else//do not accept, thus no change to h_p_traj //and revert new traj
+						else//do not accept, thus no change to h_p_traj //and reset new traj
 						{
 							h_p_traj_new[i]=p_old;
 						}
 			}
 		}
 	}
-	return accepted;//how many trajs of N_steps_per_traj were accepted
+	return accepted;
 }
 
 int main()
@@ -298,8 +288,8 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=135; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
+	const int N_waiting_trajectories=80; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=80;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/1.2;//0.035*2;
 	double beta=a*N_spots;
@@ -307,7 +297,7 @@ int main()
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=150*1.2;
-	ham_params.m=1;
+	ham_params.m=0.2;
 	ham_params.omega=1;
 	ham_params.p_b=10;//corresponds to 'bottom' of potential
 	ham_params.a=a;
@@ -326,7 +316,7 @@ int main()
 	const double x_range=15;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
-	const double traj_p_range=30;
+	const double traj_p_range=9;
 	const double traj_x_range=10;
 
 	//display parameters to terminal
