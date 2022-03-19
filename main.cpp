@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 1.5
+#define sigma 1.4
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -303,6 +303,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 
 int main()
 {
+	double aver_rel=0;
     struct timeval start, end;
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
@@ -310,7 +311,7 @@ int main()
 	const int N_waiting_trajectories=80; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=80;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0018/1.2;//0.035*2;
+	const double a=0.0018*2;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
@@ -512,8 +513,9 @@ int main()
 		//evaluate energies corresponding to each trajectory
 		aver_T=average_kinetic(h_p_traj,ham_params);
 		aver_V=average_potential(h_x_traj,ham_params);
-		aver_p_dot=average_p_dot(h_p_traj,ham_params);		
-		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot);
+		aver_p_dot=average_p_dot(h_p_traj,ham_params);
+		aver_rel += aver_T/aver_V;		
+		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot, aver_T/aver_V);
 	}
 	/*
 	printf("===list of characteristic values for debug===\n");
@@ -571,5 +573,6 @@ int main()
 	double total_time=((end.tv_sec  - start.tv_sec) * 1000000u + 
         end.tv_usec - start.tv_usec) / 1.e6;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
+	printf("aver_rel=%.3lf",aver_rel/N_sample_trajectories);
 	printf("===CPP CODE FINISHED WORKING===\n");
 }

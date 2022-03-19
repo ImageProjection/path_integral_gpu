@@ -98,7 +98,7 @@ f.close()
 end_time=time.time()
 print("elapsed time plotting p (seconds):",round(end_time-start_time,1))
 
-
+'''
 #main for x
 start_time=time.time()
 dig_ar=[] #2d array, first index is trajectory number, second is node in trajectory
@@ -117,4 +117,4 @@ ani.save('traj_mp4/x_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
 print("elapsed time plotting x (seconds):",round(end_time-start_time,1))
-
+'''
