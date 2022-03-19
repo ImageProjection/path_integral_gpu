@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 0.06
+#define sigma 1.5
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -213,7 +213,7 @@ double S_loc(double* const h_traj, struct hamiltonian_params_container ham_param
 	prev_node=h_traj[(i-1+N_spots)%N_spots];
 	next_node=h_traj[(i+1+N_spots)%N_spots];
 	S=h_traj[i]*h_traj[i]*( 1/(a*m*omega*omega)+1/(2*m) ) - h_traj[i]*( prev_node + next_node )/(a*m*omega*omega);
-
+	S=S*a;
 	return S;
 }
 /*
