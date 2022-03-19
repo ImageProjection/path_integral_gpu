@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 1.4
+#define sigma 13
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -308,17 +308,17 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=80; //number of Metropolis steps to termolise the system
+	const int N_waiting_trajectories=20; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=80;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0018*2;//0.035*2;
+	const double a=0.0018;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=150*1.2;
 	ham_params.m=0.2;
-	ham_params.omega=1;
+	ham_params.omega=10;
 	ham_params.p_b=10;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
@@ -514,7 +514,7 @@ int main()
 		aver_T=average_kinetic(h_p_traj,ham_params);
 		aver_V=average_potential(h_x_traj,ham_params);
 		aver_p_dot=average_p_dot(h_p_traj,ham_params);
-		aver_rel += aver_T/aver_V;		
+		aver_rel+= aver_T/aver_V;		
 		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot, aver_T/aver_V);
 	}
 	/*
