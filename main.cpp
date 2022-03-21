@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 1.59
+#define sigma 0.16
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -114,14 +114,14 @@ double average_kinetic(double* const h_p_traj, struct hamiltonian_params_contain
 	double result=0;
 	double a=ham_params.a;
 	double m=ham_params.m;
-	double p_b=ham_params.p_b;
+	double pb=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	double p;
 	for(int i=0; i<N_spots; i++)
 	{
 		p=h_p_traj[i];
-		result+=p*p/(2*m);
+		result+=v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
 	result = result/N_spots;
 
@@ -183,7 +183,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 	double prev_node;
 	double a=ham_params.a;
 	double m=ham_params.m;
-	double p_b=ham_params.p_b;
+	double pb=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	for(int k=0; k<N_spots; k++)
@@ -191,7 +191,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 		p=h_traj[k];
 		S_part_A += (p-h_traj[(k-1+N_spots)%N_spots])*(p-h_traj[(k-1+N_spots)%N_spots]);
 
-		S_part_B += p*p/(2*m);
+		S_part_B += v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
 	S_part_A /= (2*a*a*m*omega*omega);
 	S=a*(S_part_A + S_part_B); 
@@ -330,18 +330,18 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=80; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=80;//this many traj-s are used to build histogram
+	const int N_waiting_trajectories=20; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=20;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0018/6*8;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=150*1.2;
-	ham_params.m=5;
-	ham_params.omega=5;
-	ham_params.p_b=10;//corresponds to 'bottom' of potential
+	ham_params.v_fermi=1;
+	ham_params.m=1;
+	ham_params.omega=1;
+	ham_params.p_b=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
