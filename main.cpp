@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 0.13
+#define sigma 1.59
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -216,6 +216,25 @@ double S_loc(double* const h_traj, struct hamiltonian_params_container ham_param
 	S=S*a;
 	return S;
 }
+
+double S_prim(double* const h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
+{
+	double p,result;
+	double prev_node,next_node;
+	double a=ham_params.a;
+	double m=ham_params.m;
+	double p_b=ham_params.p_b;
+	double v_fermi=ham_params.v_fermi;
+	double omega=ham_params.omega;
+	result=0;
+	for(int i=0; i<N_spots; i++)
+	{
+		prev_node=h_traj[(i-1+N_spots)%N_spots];
+		p=h_traj[i];
+		result =result + (p-prev_node)*(p-prev_node)/(2*a*m*omega*omega) + a*p*p/(2*m);
+	}
+	return result;
+}
 /*
 double S_debug_print(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
 {
@@ -275,8 +294,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			//metrofork
 			S_new=S_loc(h_p_traj_new, ham_params,i);
 			S_old=S_loc(h_p_traj, ham_params,i);
-			gs_new=S(h_p_traj_new, ham_params);
-			gs_old=S(h_p_traj, ham_params);
+			gs_new=S_prim(h_p_traj_new, ham_params);
+			gs_old=S_prim(h_p_traj, ham_params);
 			//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 			if (S_new < S_old)
 			{
@@ -311,17 +330,17 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=20; //number of Metropolis steps to termolise the system
+	const int N_waiting_trajectories=80; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=80;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0018*4;//0.035*2;
+	const double a=0.0018/6*8;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=150*1.2;
-	ham_params.m=0.2;
-	ham_params.omega=1;
+	ham_params.m=5;
+	ham_params.omega=5;
 	ham_params.p_b=10;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
