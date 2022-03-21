@@ -292,10 +292,10 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			p_new=p_old+sigma*my_normal_double();
 			h_p_traj_new[i]=p_new;
 			//metrofork
-			S_new=S_loc(h_p_traj_new, ham_params,i);
-			S_old=S_loc(h_p_traj, ham_params,i);
-			gs_new=S_prim(h_p_traj_new, ham_params);
-			gs_old=S_prim(h_p_traj, ham_params);
+			S_new=S(h_p_traj_new, ham_params);
+			S_old=S(h_p_traj, ham_params);
+			//gs_new=S_prim(h_p_traj_new, ham_params);
+			//gs_old=S_prim(h_p_traj, ham_params);
 			//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 			if (S_new < S_old)
 			{
