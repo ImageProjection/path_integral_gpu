@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 0.16
+#define sigma 0.23
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -333,15 +333,15 @@ int main()
 	const int N_waiting_trajectories=20; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=20;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0018/6*8;//0.035*2;
+	const double a=0.0018/6*8*2;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=1;
+	ham_params.v_fermi=5;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_b=2;//corresponds to 'bottom' of potential
+	ham_params.p_b=6;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
