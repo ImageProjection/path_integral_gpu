@@ -333,7 +333,7 @@ int main()
 	const int N_waiting_trajectories=20; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=20;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0018/6*8*2;//0.035*2;
+	const double a=0.0048;//0.035*2;
 	double beta=a*N_spots;
 
 	//hamiltonian parameters
