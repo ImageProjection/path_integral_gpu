@@ -6,7 +6,7 @@
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 2.1
+#define sigma 3.1
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 struct hamiltonian_params_container
@@ -339,7 +339,7 @@ int main()
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=14;
-	ham_params.m=3.8;
+	ham_params.m=4;
 	ham_params.omega=5.5;
 	ham_params.p_b=9;//corresponds to 'bottom' of potential
 	ham_params.a=a;
