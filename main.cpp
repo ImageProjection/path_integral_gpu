@@ -338,10 +338,10 @@ int main()
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=75;
+	ham_params.v_fermi=13;
 	ham_params.m=4.5;
 	ham_params.omega=3.5;
-	ham_params.p_b=9;//corresponds to 'bottom' of potential
+	ham_params.p_b=8;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 
 	//generation parameters for metropolis
