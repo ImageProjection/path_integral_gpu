@@ -15,7 +15,7 @@ run:
 
 #for NB
 nb_full_run:
-	g++ -O2 main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
+	g++ -O2 main.cpp && xset dpms force off && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
 
 nb_compile:
 	g++ -O2 main.cpp
