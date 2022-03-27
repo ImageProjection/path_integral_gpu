@@ -35,4 +35,4 @@ git_log:
 
 #force, remove folders with contents, remove ignored
 clean:
-	git clean -fdx
+	git clean -fx
