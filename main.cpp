@@ -331,7 +331,7 @@ int main()
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=10000;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=2000;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0024*2*1.5*1.5;//0.035*2;
 	double beta=a*N_spots;
@@ -346,7 +346,7 @@ int main()
 
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
-	met_params.p_initial=ham_params.p_b/3;
+	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
