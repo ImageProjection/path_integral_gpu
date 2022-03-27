@@ -411,8 +411,11 @@ int main()
 	fprintf(out_gen_des,"p_b,%.4lf\n",ham_params.p_b);
 	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
 	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
-	fprintf(out_gen_des,"p_range,%.4lf\n",traj_p_range);
-	fprintf(out_gen_des,"p_range,%.4lf\n",traj_x_range);
+	fprintf(out_gen_des,"traj_p_range,%.4lf\n",traj_p_range);
+	fprintf(out_gen_des,"traj_x_range,%.4lf\n",traj_x_range);
+	fprintf(out_gen_des,"sigma,%.4lf\n",sigma);
+
+	
 
 	
 	
