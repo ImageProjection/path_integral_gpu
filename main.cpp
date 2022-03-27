@@ -39,13 +39,13 @@ double my_normal_double()//TODO try cuda for rng
 	return sqrt(-2*log(g2))*sin(2*M_PI*g1);
 }
 
-void print_traj(FILE* out_traj,double* traj,double h_sigma)
+void print_traj(FILE* out_traj,double* traj,double acc_rate)
 {
 	for (int i = 0; i < N_spots; i++)
 	{
-		fprintf(out_traj,"%.8lf ",traj[i]);
+		fprintf(out_traj,"%.8lf, ",traj[i]);
 	}
-	fprintf(out_traj,"%.6lf\n",h_sigma);
+	fprintf(out_traj,"%.6lf\n",acc_rate);
 }
 
 void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, double range_end)
@@ -330,9 +330,9 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=2000;//this many metropolis propositions are made for each of this traj-s
+	const int N_waiting_trajectories=2; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=2;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=200;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0024*2*1.5*1.5;//0.035*2;
 	double beta=a*N_spots;
 

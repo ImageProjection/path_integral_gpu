@@ -91,7 +91,7 @@ dig_ar=[] #2d array, first index is trajectory number, second is node in traject
 f=open("out_p_traj.txt",'r')
 n_lines=0
 for line in f:
-    dig_ar.append(list(map(float,line.split())))
+    dig_ar.append(list(map(float,line.split(","))))
     n_lines+=1
 
 dig_ar=dig_ar[ (n_lines-N_vid_fr if n_lines-N_vid_fr>0 else 0) :]#so that only last are used, if not all
@@ -109,7 +109,7 @@ dig_ar=[] #2d array, first index is trajectory number, second is node in traject
 f=open("out_x_traj.txt",'r')
 n_lines=0
 for line in f:
-    dig_ar.append(list(map(float,line.split())))
+    dig_ar.append(list(map(float,line.split(","))))
     n_lines+=1
 
 dig_ar=dig_ar[ (n_lines-N_vid_fr if n_lines-N_vid_fr>0 else 0) :]

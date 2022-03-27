@@ -28,26 +28,25 @@ traj_x_range=values[13]
 def cumulative_transform(p_traj):
     sum=0
     x_traj=[]
-    x_traj.append(p_traj*a/m)
+    x_traj.append(p_traj[0]*a/m)
     for i in range(N_spots):
         x_traj.append(x_traj[i-1]+p_traj[i]*a/m)
-    x_traj.append(p_traj[N_spots])
+    x_traj.append(p_traj[N_spots])#carry over acc_rate
     return x_traj
 
         
 #main
 p_file=open("out_p_traj.txt",'r')
-x_file=open("out_p_traj.txt",'w')
+x_file=open("out_x_traj.txt",'w')
 
-p_sample_traj=[]
+p_traj=[]
 for line in p_file:
     #obtain list of points
-    p_sample_traj=list(map(float,line.split()))
+    p_traj=list(map(float,line.split(",")))
     #transform
     x_traj=cumulative_transform(p_traj)
-    x_traj.append(p_traj[N_spots])#carry over acc rate
-    #put into x_traj file
-    x_file.write(x_traj)
+    #put into x_traj file    
+    x_file.write(", ".join(str(round(t,8)) for t in x_traj) +"\n")
 
 p_file.close()
 x_file.close()

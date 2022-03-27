@@ -14,6 +14,9 @@ run:
 	./main
 
 #for NB
+nb_long_run:
+	g++ -O2 main.cpp && xset dpms force off && ./a.out && /usr/bin/python p_cumulative_transform.py && /usr/bin/python p_x_mp4_generator.py
+
 nb_full_run:
 	g++ -O2 main.cpp && xset dpms force off && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
 
