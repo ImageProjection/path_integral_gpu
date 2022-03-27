@@ -2,12 +2,18 @@
 #include <cstdio>
 #include <sys/time.h>
 #include <cmath>
+#include <random>
+using namespace std;
+std::random_device rd; 
+std::mt19937_64 gen(rd()); 
+std::normal_distribution<double> my_normal_double(0, 1); 
 
 #define print_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
 #define sigma 3.3
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
+
 
 struct hamiltonian_params_container
 {
@@ -30,7 +36,7 @@ struct metrop_params_container
 	double e_molec;
 	double e_lang;
 };
-
+/*
 double my_normal_double()//TODO try cuda for rng
 {
 	double g1,g2;
@@ -38,7 +44,7 @@ double my_normal_double()//TODO try cuda for rng
 	g2=(double)rand()/RAND_MAX;
 	return sqrt(-2*log(g2))*sin(2*M_PI*g1);
 }
-
+*/
 void print_traj(FILE* out_traj,double* traj,double acc_rate)
 {
 	for (int i = 0; i < N_spots; i++)
@@ -289,7 +295,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			//proposition
 			//copy_traj(h_p_traj_new,h_p_traj);
 			p_old=h_p_traj[i];
-			p_new=p_old+sigma*my_normal_double();
+			p_new=p_old+sigma*my_normal_double(gen);
 			h_p_traj_new[i]=p_new;
 			//metrofork
 			S_new=S(h_p_traj_new, ham_params);
