@@ -43,7 +43,7 @@ void print_traj(FILE* out_traj,double* traj,double h_sigma)
 {
 	for (int i = 0; i < N_spots; i++)
 	{
-		fprintf(out_traj,"%.3lf ",traj[i]);
+		fprintf(out_traj,"%.8lf ",traj[i]);
 	}
 	fprintf(out_traj,"%.6lf\n",h_sigma);
 }
