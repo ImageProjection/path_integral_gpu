@@ -50,24 +50,41 @@ def add_hist(p_traj, h_hist, p_range):
 
     
 fig=plt.figure()
-#main for p
 h_hist=np.zeros(N_bins)
+#main for p
 ax1=fig.add_subplot(2,1,1)
 fp=open("out_p_traj.txt",'r')
 #read each line add to cumulative histogram
-n_lines=0
 for line in fp:
         full_line=list(map(float,line.split(",")))
         p_traj=full_line[0:N_spots]
         discarded_p_points+=add_hist(p_traj,h_hist, p_range)
 
-#h_dense_plot=h_hist/(np.sum(h_hist)*2.0*p_range/N_bins)
-h_dense_plot=h_hist
+h_dense_plot=h_hist/(np.sum(h_hist)*2.0*p_range/N_bins)
 
 x_data=np.linspace(-p_range,p_range,N_bins)
 y_data=h_dense_plot
+ax1.set_ylabel("|P(p)|^2")
+ax1.set_xlabel("coordinate p (python plot)")
 ax1.set_xlim(-p_range,p_range)
-ax1.step(x_data,y_data)
-print("n_lines")
+ax1.step(x_data,y_data,color='red',linewidth = 1.1)
+
+#main for x
+ax2=fig.add_subplot(2,1,2)
+fp=open("out_x_traj.txt",'r')
+#read each line add to cumulative histogram
+for line in fp:
+        full_line=list(map(float,line.split(",")))
+        x_traj=full_line[0:N_spots]
+        discarded_x_points+=add_hist(x_traj,h_hist, x_range)
+
+h_dense_plot=h_hist/(np.sum(h_hist)*2.0*x_range/N_bins)
+
+x_data=np.linspace(-p_range,p_range,N_bins)
+y_data=h_dense_plot
+ax2.set_ylabel("|P(p)|^2")
+ax2.set_xlabel("coordinate p (python plot)")
+ax2.set_xlim(-p_range,p_range)
+ax2.step(x_data,y_data,color='red',linewidth = 1.1)
 plt.show()
 
