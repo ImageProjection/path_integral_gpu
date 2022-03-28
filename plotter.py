@@ -29,7 +29,8 @@ traj_p_range=values[12]
 traj_x_range=values[13]
 
 #amount of frames used for video
-N_vid_fr=N_waiting_trajectories+N_sample_trajectories#min(300,N_sample_trajectories);
+#N_vid_fr=N_waiting_trajectories+N_sample_trajectories#min(300,N_sample_trajectories);
+N_vid_fr=min(300,N_sample_trajectories);
 
 
 fig=plt.figure()
