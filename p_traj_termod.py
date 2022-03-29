@@ -153,7 +153,7 @@ f_locals=open("local_averages.txt","w")
 #format is
 #E, T, V, p_dot, rel, kink_metr, beta
 #same for errors, except error for beta is 0
-f_summary=open("global_averages.txt","w")
+f_summary=open("global_averages.txt","a")
 
 for i in range(N_sample_trajectories):
     f_locals.write(str(i)+", "

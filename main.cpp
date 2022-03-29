@@ -54,7 +54,7 @@ void print_traj(FILE* out_traj,double* traj,double acc_rate)
 	}
 	fprintf(out_traj,"%.6lf\n",acc_rate);
 }
-
+/*
 void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, double range_end)
 {
 	double bin_width=(double)(range_end-range_start)/N_bins;
@@ -114,7 +114,7 @@ void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m
 		h_x_traj[j]=h_x_traj[j-1]+h_p_traj[j]*a/m;
 	}
 }
-
+*/
 //average sqrt-thing over 1 sample traj
 double average_kinetic(double* const h_p_traj, struct hamiltonian_params_container ham_params)
 {
@@ -205,76 +205,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 	return S;
 }
 
-double S_loc(double* const h_traj, struct hamiltonian_params_container ham_params,int i)//action, PBC trajectory
-{
-	double S,p;
-	double S_part_A=0;//first term
-	double S_part_B=0;//part with T in it
-	double T_sq,T_m;
-	double prev_node,next_node;
-	double a=ham_params.a;
-	double m=ham_params.m;
-	double p_b=ham_params.p_b;
-	double v_fermi=ham_params.v_fermi;
-	double omega=ham_params.omega;
-	prev_node=h_traj[(i-1+N_spots)%N_spots];
-	next_node=h_traj[(i+1+N_spots)%N_spots];
-	S=h_traj[i]*h_traj[i]*( 1/(a*a*m*omega*omega)+1/(2*m) ) - h_traj[i]*( prev_node + next_node )/(a*a*m*omega*omega);
-	S=S*a;
-	return S;
-}
 
-double S_prim(double* const h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
-{
-	double p,result;
-	double prev_node,next_node;
-	double a=ham_params.a;
-	double m=ham_params.m;
-	double p_b=ham_params.p_b;
-	double v_fermi=ham_params.v_fermi;
-	double omega=ham_params.omega;
-	result=0;
-	for(int i=0; i<N_spots; i++)
-	{
-		prev_node=h_traj[(i-1+N_spots)%N_spots];
-		p=h_traj[i];
-		result =result + (p-prev_node)*(p-prev_node)/(2*a*m*omega*omega) + a*p*p/(2*m);
-	}
-	return result;
-}
-/*
-double S_debug_print(double* h_traj, struct hamiltonian_params_container ham_params)//action, PBC trajectory
-{
-	double S,p;
-	double S_part_A=0;//first term
-	double S_part_B=0;//part with T in it
-	double T_sq,T_m;
-	double prev_node;
-	double a=ham_params.a;
-	double m=ham_params.m;
-	double p_b=ham_params.p_b;
-	double v_fermi=ham_params.v_fermi;
-	double omega=ham_params.omega;
-	for(int k=0; k<N_spots; k++)
-	{
-		prev_node=h_traj[(k-1+N_spots)%N_spots];
-		p=h_traj[k];
-		S_part_A += (p-prev_node)*(p-prev_node) / (2*a*a*m*omega*omega);
-
-		T_sq=(p*p - p_b*p_b)*(p*p - p_b*p_b)/(4*p_b*p_b);
-		T_m=m*m*v_fermi*v_fermi;
-		S_part_B += v_fermi*sqrt(T_sq+T_m);
-	}
-	S=a*(S_part_A + S_part_B);
-	printf("S_part_A=%.8lf\n",S_part_A);
-	printf("S_part_B=%.8lf\n",S_part_B);
-	printf("T_sq=%.8lf\n",T_sq);
-	printf("T_m=%.8lf\n",T_m);
-
-
-	return S;
-}
-*/
 int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
 	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
 	struct hamiltonian_params_container ham_params,
@@ -325,7 +256,6 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 
 int main()
 {
-	double aver_rel=0;
     struct timeval start, end;
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
@@ -375,22 +305,21 @@ int main()
 	printf("N_cycles_per_step=%d\n",met_params.N_cycles_per_step);
 	printf("T_molec=%d\n",met_params.T_molec);
 	printf("T_lang=%d\n",met_params.T_lang);
-	//printf("cpp code ETA (seconds): %.1f\n",0.15*1e-6*N_sweeps_waiting*N_spots+3.78/3.2*1e-7*Traj_sample_period*N_sample_trajectories*N_spots);
 
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
 	out_gen_des=fopen("out_gen_des.txt","w");
-	FILE *out_energies;
-	out_energies=fopen("out_energies.txt","w");
-	double aver_T,aver_V,aver_p_dot;
+	//FILE *out_energies;
+	//out_energies=fopen("out_energies.txt","w");
+	//double aver_T,aver_V,aver_p_dot;
 	FILE *out_p_traj;
 	out_p_traj=fopen("out_p_traj.txt","w");
-	FILE *out_p_dens_plot;
-	out_p_dens_plot=fopen("out_p_dens_plot.txt","w");
-	FILE *out_x_traj;
-	out_x_traj=fopen("out_x_traj.txt","w");
-	FILE *out_x_dens_plot;
-	out_x_dens_plot=fopen("out_x_dens_plot.txt","w");
+	//FILE *out_p_dens_plot;
+	//out_p_dens_plot=fopen("out_p_dens_plot.txt","w");
+	//FILE *out_x_traj;
+	//out_x_traj=fopen("out_x_traj.txt","w");
+	//FILE *out_x_dens_plot;
+	//out_x_dens_plot=fopen("out_x_dens_plot.txt","w");
 
 	//print general simulation description to file
 	fprintf(out_gen_des,"N_spots,%d\n",N_spots);
@@ -429,6 +358,7 @@ int main()
 	h_x_traj=(double*)malloc(N_spots*sizeof(double));
 
 	//allocate memory for p and x histograms and density plots (normalised histograms) on cpu and gpu
+	/*
 	unsigned int* h_p_hist;
 	h_p_hist=(unsigned int*)malloc(N_bins*sizeof(int));
 	for(int i=0; i<N_bins; i++)
@@ -441,7 +371,7 @@ int main()
 	h_p_dens_plot=(double*)malloc(N_bins*sizeof(double));
 	double* h_x_dens_plot;
 	h_x_dens_plot=(double*)malloc(N_bins*sizeof(double));
-
+	*/
 	//init h_p_traj and h_pi_vect
 	//
 	for(int i=0; i<N_spots; i++)
@@ -474,9 +404,6 @@ int main()
 	double accepted,acc_rate;
 
 	//perform termolisation steps without sampling
-	//met_params.T_molec=9;
-	//met_params.T_lang=0;//do not touch, unless it is pure Langevin
-	//met_params.N_cycles_per_step=10;
 	for (int i=0; i<N_waiting_trajectories; i++)
 	{
 		//evolve p-trajectory
@@ -488,7 +415,7 @@ int main()
 		}
 
 		//evaluate x-trajectory
-		h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
+		//h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
 
 		//add both trajectories points to cumulative histograms
 		//h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
@@ -498,14 +425,14 @@ int main()
 		if (print_termo_traj_flag)
 		{
 			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
-			print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
+			//print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
 		}
 
 		//evaluate energies corresponding to each trajectory
-		aver_T=average_kinetic(h_p_traj,ham_params);
-		aver_V=average_potential(h_x_traj,ham_params);
-		aver_p_dot=average_p_dot(h_p_traj,ham_params);		
-		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot);
+		//aver_T=average_kinetic(h_p_traj,ham_params);
+		//aver_V=average_potential(h_x_traj,ham_params);
+		//aver_p_dot=average_p_dot(h_p_traj,ham_params);		
+		//fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot);
 	}
 
 	//perform sweeps to build histogram and optionaly output trajectories
@@ -523,25 +450,25 @@ int main()
 		}
 
 		//evaluate x-trajectory
-		h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
+		//h_cumulative_transform(h_p_traj,h_x_traj,ham_params.a,ham_params.m);
 
 		//add both trajectories points to cumulative histograms
-		h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
-		h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
+		//h_histogram(h_p_traj, h_p_hist, -p_range, p_range);
+		//h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
 
 		//print trajectories with appended acc rate (evaluated over steps made for this traj)		
 		if (print_traj_flag)
 		{
 			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
-			print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
+			//print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
 		}
 
 		//evaluate energies corresponding to each trajectory
-		aver_T=average_kinetic(h_p_traj,ham_params);
-		aver_V=average_potential(h_x_traj,ham_params);
-		aver_p_dot=average_p_dot(h_p_traj,ham_params);
-		aver_rel+= aver_T/aver_V;		
-		fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot, aver_T/aver_V);
+		//aver_T=average_kinetic(h_p_traj,ham_params);
+		//aver_V=average_potential(h_x_traj,ham_params);
+		//aver_p_dot=average_p_dot(h_p_traj,ham_params);
+		//aver_rel+= aver_T/aver_V;		
+		//fprintf(out_energies,"%d, %.6lf, %.6lf, %.6lf, %.6lf\n", i, aver_T,aver_V,aver_p_dot, aver_T/aver_V);
 	}
 	/*
 	printf("===list of characteristic values for debug===\n");
@@ -570,26 +497,26 @@ int main()
 	}
 	printf("===end of list of characteristic values for debug===\n");
 	*/
-	
+	/*
 	//copy, normalize and plot histograms to file
 	normalize_hist(h_p_hist, h_p_dens_plot, -p_range, p_range);
 	normalize_hist(h_x_hist, h_x_dens_plot, -x_range, x_range);
 	print_hist(out_p_dens_plot,h_p_dens_plot,-p_range,p_range);
 	print_hist(out_x_dens_plot,h_x_dens_plot,-x_range,x_range);
-	
+	*/
 	//free memory
 	free(h_p_traj);
-	free(h_x_traj);
-	free(h_p_dens_plot);
-	free(h_x_dens_plot);
-	free(h_p_hist);
-	free(h_x_hist);
+	//free(h_x_traj);
+	//free(h_p_dens_plot);
+	//free(h_x_dens_plot);
+	//free(h_p_hist);
+	//free(h_x_hist);
 	
 	//close files
 	fclose(out_p_traj);
-	fclose(out_x_traj);
-	fclose(out_p_dens_plot);
-	fclose(out_x_dens_plot);
+	//fclose(out_x_traj);
+	//fclose(out_p_dens_plot);
+	//fclose(out_x_dens_plot);
 
 	//check for errors and print report
 	printf("===launch status report===\n");
@@ -599,6 +526,6 @@ int main()
 	double total_time=((end.tv_sec  - start.tv_sec) * 1000000u + 
         end.tv_usec - start.tv_usec) / 1.e6;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
-	printf("aver_rel=%.3lf",aver_rel/N_sample_trajectories);
+	//printf("aver_rel=%.3lf",aver_rel/N_sample_trajectories);
 	printf("===CPP CODE FINISHED WORKING===\n");
 }
