@@ -8,7 +8,8 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define print_traj_flag 1
+#define print_traj_flag 1//sample traj
+#define print_termo_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
 #define sigma 3.3
@@ -167,7 +168,7 @@ double average_p_dot(double* const h_p_traj, struct hamiltonian_params_container
 		p=h_p_traj[i];
 		result+=(p-prev_node)*(p-prev_node);
 	}
-	result = result / (2*a*m*omega*omega) / N_spots;
+	result = result / (2*a*a*m*omega*omega) / N_spots;
 	return result;
 }
 
@@ -396,17 +397,18 @@ int main()
 	fprintf(out_gen_des,"N_waiting_trajectories,%d\n",N_waiting_trajectories);
 	fprintf(out_gen_des,"N_sample_trajectories,%d\n",N_sample_trajectories);
 	fprintf(out_gen_des,"N_steps_per_traj,%d\n",N_steps_per_traj);
-	fprintf(out_gen_des,"a,%.4lf\n",a);
-	fprintf(out_gen_des,"beta,%.4lf\n",beta);
-	fprintf(out_gen_des,"v_fermi,%.4lf\n",ham_params.v_fermi);
-	fprintf(out_gen_des,"m,%.4lf\n",ham_params.m);
-	fprintf(out_gen_des,"omega,%.4lf\n",ham_params.omega);
-	fprintf(out_gen_des,"p_b,%.4lf\n",ham_params.p_b);
-	fprintf(out_gen_des,"p_range,%.4lf\n",p_range);
-	fprintf(out_gen_des,"x_range,%.4lf\n",x_range);
-	fprintf(out_gen_des,"traj_p_range,%.4lf\n",traj_p_range);
-	fprintf(out_gen_des,"traj_x_range,%.4lf\n",traj_x_range);
-	fprintf(out_gen_des,"sigma,%.4lf\n",sigma);
+	fprintf(out_gen_des,"a,%.8lf\n",a);
+	fprintf(out_gen_des,"beta,%.8lf\n",beta);
+	fprintf(out_gen_des,"v_fermi,%.8lf\n",ham_params.v_fermi);
+	fprintf(out_gen_des,"m,%.8lf\n",ham_params.m);
+	fprintf(out_gen_des,"omega,%.8lf\n",ham_params.omega);
+	fprintf(out_gen_des,"p_b,%.8lf\n",ham_params.p_b);
+	fprintf(out_gen_des,"p_range,%.8lf\n",p_range);
+	fprintf(out_gen_des,"x_range,%.8lf\n",x_range);
+	fprintf(out_gen_des,"traj_p_range,%.8lf\n",traj_p_range);
+	fprintf(out_gen_des,"traj_x_range,%.8lf\n",traj_x_range);
+	fprintf(out_gen_des,"sigma,%.8lf\n",sigma);
+	fprintf(out_gen_des,"print_termo_traj_flag,%d\n",print_termo_traj_flag);
 
 	
 
@@ -493,7 +495,7 @@ int main()
 		//h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
 
 		//print trajectories with appended acc rate (evaluated over steps made for this traj)		
-		if (print_traj_flag)
+		if (print_termo_traj_flag)
 		{
 			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
 			print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);

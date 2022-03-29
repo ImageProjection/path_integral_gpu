@@ -45,8 +45,36 @@ x_range=values[11]
 traj_p_range=values[12]
 traj_x_range=values[13]
 sigma=values[14]
+print_termo_traj_flag=values[15]
 
+#functions
+def aver_T_func(p_traj):
+    pb=p_bottom
+    result=0
+    for i in range(N_spots):
+        result+= v_fermi*math.sqrt( (p_traj[i]**2-pb**2)**2/(4*pb**2)
+             + m*m*v_fermi*v_fermi )
+    return result/N_spots
 
+def aver_V_func(x_traj):
+    result=0
+    for i in range(N_spots):
+        result+=0.5*m*m*omega*omega*x_traj[i]*x_traj[i]
+    return result/N_spots
+
+def aver_p_dot_func(p_traj):
+    result=0
+    for i in range(N_spots):
+        result+= ( p_traj[i] - p_traj[(i-1+N_spots)%N_spots] )**2
+    result= result/(2*a*a*m*omega*omega)
+    return result/N_spots
+
+def kink_metr_func(p_traj):
+    result=0
+    for i in range(N_spots):
+        if np.sign(p_traj[i]) != np.sign(p_traj[(i-1+N_spots)%N_spots]):
+            result+=1
+    return result
 
 #main
 #list of values for each observable, later convert to np.arrays
@@ -56,16 +84,23 @@ aver_p_dot_vals=[]#p
 aver_E_vals=[]#from both
 aver_rel_vals=[]#from both
 kink_metr_vals=[]#p
+
 fp=open("out_p_traj.txt",'r')
 fx=open("out_x_traj.txt",'r')
+#skip to sampling trajectories part in both files
+if print_termo_traj_flag:
+    for i in range(N_waiting_trajectories):
+        fx.readline()
+        fp.readline()
+
 #getting p-related local data
 for line in fp:
     full_line=list(map(float,line.split(",")))
     p_traj=full_line[0:N_spots]
 
-    aver_T=aver_T(p_traj)
-    aver_p_dot=aver_p_dot(p_traj)
-    kink_metr=kink_metr(p_traj)
+    aver_T=aver_T_func(p_traj)
+    aver_p_dot=aver_p_dot_func(p_traj)
+    kink_metr=kink_metr_func(p_traj)
 
     aver_T_vals.append(aver_T)
     aver_p_dot_vals.append(aver_p_dot)
@@ -76,7 +111,7 @@ for line in fx:
     full_line=list(map(float,line.split(",")))
     x_traj=full_line[0:N_spots]
 
-    aver_V=aver_V(x_traj)
+    aver_V=aver_V_func(x_traj)
     
     aver_V_vals.append(aver_V)
 
@@ -118,7 +153,7 @@ f_locals=open("local_averages.txt","w")
 #format is
 #E, T, V, p_dot, rel, kink_metr, beta
 #same for errors, except error for beta is 0
-f_summary=open("global_averages")
+f_summary=open("global_averages.txt","w")
 
 for i in range(N_sample_trajectories):
     f_locals.write(str(i)+", "
@@ -132,18 +167,19 @@ for i in range(N_sample_trajectories):
 
 
 f_summary.write(str(global_aver_E)+", "
-    +str(global_avet_T)+", "
-    +str(global_avet_V)+", "
-    +str(global_avet_p_dot)+", "
-    +str(global_avet_rel)+", "
-    +str(global_avet_kink_metr)+"\n")
+    +str(global_aver_T)+", "
+    +str(global_aver_V)+", "
+    +str(global_aver_p_dot)+", "
+    +str(global_aver_rel)+", "
+    +str(global_aver_kink_metr)+
+    +str(beta)+"\n")
 
 f_summary.write(str(global_aver_E_error)+", "
-    +str(global_avet_T_error)+", "
-    +str(global_avet_V_error)+", "
-    +str(global_avet_p_dot_error)+", "
-    +str(global_avet_rel_error)+", "
-    +str(global_avet_kink_metr_error)+", "
+    +str(global_aver_T_error)+", "
+    +str(global_aver_V_error)+", "
+    +str(global_aver_p_dot_error)+", "
+    +str(global_aver_rel_error)+", "
+    +str(global_aver_kink_metr_error)+", "
     +str(0.0)+"\n")    
 
 
