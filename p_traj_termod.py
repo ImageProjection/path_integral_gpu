@@ -11,7 +11,7 @@ output: -into separate file, each line for 1 sample traj
             -global average T
             -global average V
             -global average p_dot term
-            -global average E=V-T
+            -global average E
             -global average rel
             -global average kink metric
             with statystical errors for each of these quantities
@@ -81,8 +81,10 @@ for line in fx:
     aver_V_vals.append(aver_V)
 
 #evaluating "both" global values
-for i in range(N_sample_trajectories)
-    aver_rel=aver_T_vals[i]/aver_V_vals[i]
+for i in range(N_sample_trajectories):
+    aver_E_vals.append(aver_T_vals[i]-aver_p_dot_vals[i])
+    aver_rel_vals.append(aver_T_vals[i]/aver_V_vals[i])
+
 
 #at this point all lists of values a filled
 #and ready for further print and use
@@ -93,3 +95,57 @@ aver_p_dot_vals=np.array(aver_p_dot_vals)
 aver_E_vals=np.array(aver_E_vals)
 aver_rel_vals=np.array(aver_rel_vals)
 kink_metr_vals=np.array(kink_metr_vals)
+
+global_aver_T=np.average(aver_T_vals)
+global_aver_V=np.average(aver_V_vals)
+global_aver_p_dot=np.average(aver_p_dot_vals)
+global_aver_E=np.average(aver_E_vals)
+global_aver_rel=np.average(aver_rel_vals)
+global_aver_kink_metr=np.average(kink_metr_vals)
+
+#evaluating errors
+global_aver_T_error=np.std(aver_T_vals)/math.sqrt(N_sample_trajectories-1)
+global_aver_V_error=np.std(aver_V_vals)/math.sqrt(N_sample_trajectories-1)
+global_aver_p_dot_error=np.std(aver_p_dot_vals)/math.sqrt(N_sample_trajectories-1)
+global_aver_E_error=np.std(aver_E_vals)/math.sqrt(N_sample_trajectories-1)
+global_aver_rel_error=np.std(aver_rel_vals)/math.sqrt(N_sample_trajectories-1)
+global_aver_kink_metr_error=np.std(kink_metr_vals)/math.sqrt(N_sample_trajectories-1)
+
+#format is
+#N_sample_traj_index, E, T, V, p_dot, rel, kink_metr
+f_locals=open("local_averages.txt","w")
+
+#format is
+#E, T, V, p_dot, rel, kink_metr, beta
+#same for errors, except error for beta is 0
+f_summary=open("global_averages")
+
+for i in range(N_sample_trajectories):
+    f_locals.write(str(i)+", "
+        +str(aver_E_vals[i])+", "
+        +str(aver_T_vals[i])+", "
+        +str(aver_V_vals[i])+", "
+        +str(aver_p_dot_vals[i])+", "
+        +str(aver_rel_vals[i])+", "
+        +str(kink_metr_vals[i])+", "
+        +str(beta)+"\n")
+
+
+f_summary.write(str(global_aver_E)+", "
+    +str(global_avet_T)+", "
+    +str(global_avet_V)+", "
+    +str(global_avet_p_dot)+", "
+    +str(global_avet_rel)+", "
+    +str(global_avet_kink_metr)+"\n")
+
+f_summary.write(str(global_aver_E_error)+", "
+    +str(global_avet_T_error)+", "
+    +str(global_avet_V_error)+", "
+    +str(global_avet_p_dot_error)+", "
+    +str(global_avet_rel_error)+", "
+    +str(global_avet_kink_metr_error)+", "
+    +str(0.0)+"\n")    
+
+
+f_locals.close()
+f_summary.close()
