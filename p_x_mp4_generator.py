@@ -97,7 +97,7 @@ ani=animation.FuncAnimation(fig, upd_p, init_func=init_p, interval=200,frames=(N
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 writervideo = animation.FFMpegWriter(fps=4)
 #ani.save("traj_mp4/a="+str(a)+"_m="+str(m)+"_w="+str(omega)+"_vf="+str(v_fermi)+"_p_traj_evolution.mp4", writer=writervideo)
-ani.save("traj_mp4/p_traj_evolution.mp4", writer=writervideo)
+ani.save("p_traj_evolution.mp4", writer=writervideo)
 
 f.close()
 end_time=time.time()
@@ -117,7 +117,7 @@ ani=animation.FuncAnimation(fig, upd_x, init_func=init_x, interval=200,frames=(N
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 writervideo = animation.FFMpegWriter(fps=4)
-ani.save('traj_mp4/x_traj_evolution.mp4', writer=writervideo)
+ani.save('x_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
 print("elapsed time plotting x (seconds):",round(end_time-start_time,1))

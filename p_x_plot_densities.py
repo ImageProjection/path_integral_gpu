@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
 import time
-from pathlib import Path
 
 #grab simulaton parameters
 values=[]
@@ -96,7 +95,6 @@ ax2.step(x_data,y_data,color='green',linewidth = 1.1)
 plt.locator_params(nbins=20)
 plt.tight_layout()
 
-Path("traj_hist").mkdir(exist_ok=True)
-plt.savefig("traj_hist/m="+str(m)+"_p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)
+plt.savefig("m="+str(m)+"_p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)
 
 
