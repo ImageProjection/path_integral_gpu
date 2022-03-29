@@ -171,7 +171,7 @@ f_summary.write(str(global_aver_E)+", "
     +str(global_aver_V)+", "
     +str(global_aver_p_dot)+", "
     +str(global_aver_rel)+", "
-    +str(global_aver_kink_metr)+
+    +str(global_aver_kink_metr)+", "
     +str(beta)+"\n")
 
 f_summary.write(str(global_aver_E_error)+", "

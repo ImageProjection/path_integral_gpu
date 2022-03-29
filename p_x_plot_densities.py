@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
 import time
+from pathlib import Path
 
 #grab simulaton parameters
 values=[]
@@ -62,10 +63,12 @@ for line in fp:
 
 h_dense_plot=h_hist/(np.sum(h_hist)*2.0*p_range/N_bins)
 
+
 x_data=np.linspace(-p_range,p_range,N_bins)
 y_data=h_dense_plot
+ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 ax1.set_ylabel("|P(p)|^2")
-ax1.set_xlabel("coordinate p (python plot)")
+ax1.set_xlabel("coordinate p")
 ax1.set_xlim(-p_range,p_range)
 ax1.step(x_data,y_data,color='red',linewidth = 1.1)
 
@@ -82,9 +85,18 @@ h_dense_plot=h_hist/(np.sum(h_hist)*2.0*x_range/N_bins)
 
 x_data=np.linspace(-p_range,p_range,N_bins)
 y_data=h_dense_plot
-ax2.set_ylabel("|P(p)|^2")
-ax2.set_xlabel("coordinate p (python plot)")
+ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
+ax2.set_ylabel("|P(x)|^2")
+ax2.set_xlabel("coordinate x")
 ax2.set_xlim(-p_range,p_range)
-ax2.step(x_data,y_data,color='red',linewidth = 1.1)
-plt.show()
+ax2.step(x_data,y_data,color='green',linewidth = 1.1)
+
+
+#display results
+plt.locator_params(nbins=20)
+plt.tight_layout()
+
+Path("traj_hist").mkdir(exist_ok=True)
+plt.savefig("traj_hist/m="+str(m)+"_p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)
+
 

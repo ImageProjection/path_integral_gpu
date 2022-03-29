@@ -65,7 +65,6 @@ def upd_p(frame_i):
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     acc_rate=dig_ar[frame_i][N_spots]
     my_xlabel="sample traj No="+str(frame_i)+"\n"
-    my_xlabel+="acc_rate="+str(acc_rate)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
     return line,
@@ -79,7 +78,6 @@ def upd_x(frame_i):
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     acc_rate=dig_ar[frame_i][N_spots]
     my_xlabel="sample traj No="+str(frame_i)+"\n"
-    my_xlabel+="acc_rate="+str(acc_rate)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
     return line,
@@ -99,7 +97,7 @@ ani=animation.FuncAnimation(fig, upd_p, init_func=init_p, interval=200,frames=(N
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 writervideo = animation.FFMpegWriter(fps=4)
 #ani.save("traj_mp4/a="+str(a)+"_m="+str(m)+"_w="+str(omega)+"_vf="+str(v_fermi)+"_p_traj_evolution.mp4", writer=writervideo)
-ani.save("traj_mp4/pp_traj_evolution.mp4", writer=writervideo)
+ani.save("traj_mp4/p_traj_evolution.mp4", writer=writervideo)
 
 f.close()
 end_time=time.time()
@@ -119,7 +117,7 @@ ani=animation.FuncAnimation(fig, upd_x, init_func=init_x, interval=200,frames=(N
 
 plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 writervideo = animation.FFMpegWriter(fps=4)
-ani.save('traj_mp4/xx_traj_evolution.mp4', writer=writervideo)
+ani.save('traj_mp4/x_traj_evolution.mp4', writer=writervideo)
 f.close()
 end_time=time.time()
 print("elapsed time plotting x (seconds):",round(end_time-start_time,1))
