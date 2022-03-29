@@ -47,6 +47,8 @@ traj_x_range=values[13]
 sigma=values[14]
 
 
+
+#main
 #list of values for each observable, later convert to np.arrays
 aver_T_vals=[]#p
 aver_V_vals=[]#x
@@ -55,21 +57,35 @@ aver_E_vals=[]#from both
 aver_rel_vals=[]#from both
 kink_metr_vals=[]#p
 fp=open("out_p_traj.txt",'r')
-
+fx=open("out_x_traj.txt",'r')
 #getting p-related local data
 for line in fp:
     full_line=list(map(float,line.split(",")))
     p_traj=full_line[0:N_spots]
+
     aver_T=aver_T(p_traj)
     aver_p_dot=aver_p_dot(p_traj)
     kink_metr=kink_metr(p_traj)
 
+    aver_T_vals.append(aver_T)
+    aver_p_dot_vals.append(aver_p_dot)
+    kink_metr_vals.append(kink_metr)
+
 #getting x related local data
+for line in fx:
+    full_line=list(map(float,line.split(",")))
+    x_traj=full_line[0:N_spots]
+
+    aver_V=aver_V(x_traj)
+    
+    aver_V_vals.append(aver_V)
 
 #evaluating "both" global values
+for i in range(N_sample_trajectories)
+    aver_rel=aver_T_vals[i]/aver_V_vals[i]
 
 #at this point all lists of values a filled
-#and ready for further use
+#and ready for further print and use
 
 aver_T_vals=np.array(aver_T_vals)
 aver_V_vals=np.array(aver_V_vals)

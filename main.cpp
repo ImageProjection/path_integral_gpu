@@ -293,21 +293,16 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 		for(int i=0; i<N_spots; i++)//local upd for each node
 		{
 			//proposition
-			//copy_traj(h_p_traj_new,h_p_traj);
+			S_old=S(h_p_traj, ham_params);
 			p_old=h_p_traj[i];
 			p_new=p_old+sigma*my_normal_double(gen);
-			h_p_traj_new[i]=p_new;
-			//metrofork
-			S_new=S(h_p_traj_new, ham_params);
-			S_old=S(h_p_traj, ham_params);
-			//gs_new=S_prim(h_p_traj_new, ham_params);
-			//gs_old=S_prim(h_p_traj, ham_params);
-			//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
+			h_p_traj[i]=p_new;
+			S_new=S(h_p_traj, ham_params);
+
+			//metrofork			
 			if (S_new < S_old)
 			{
-				;
 				accepted++;
-				copy_traj(h_p_traj,h_p_traj_new);//watch out, may remove that later
 			}
 				else
 				{
@@ -315,13 +310,11 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 					gamma=(double)rand()/RAND_MAX;
 					if (gamma < prob_acc)//then accept
 						{
-							;
 							accepted++;
-							copy_traj(h_p_traj,h_p_traj_new);//watch out, may remove that later
 						}
 						else//do not accept, thus no change to h_p_traj //and reset new traj
 						{
-							h_p_traj_new[i]=p_old;
+							h_p_traj[i]=p_old;
 						}
 			}
 		}
@@ -336,8 +329,8 @@ int main()
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=3; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=2;//this many traj-s are used to build histogram
+	const int N_waiting_trajectories=100; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=100;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=300;//this many metropolis propositions are made for each of this traj-s
 	const double a=0.0024*2*1.5*1.5;//0.035*2;
 	double beta=a*N_spots;
