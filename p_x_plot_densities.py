@@ -67,7 +67,7 @@ x_data=np.linspace(-p_range,p_range,N_bins)
 y_data=h_dense_plot
 ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 ax1.set_ylabel("|P(p)|^2")
-ax1.set_xlabel("coordinate p")
+ax1.set_xlabel("координата p")
 ax1.set_xlim(-p_range,p_range)
 ax1.step(x_data,y_data,color='red',linewidth = 1.1)
 
@@ -86,7 +86,7 @@ x_data=np.linspace(-p_range,p_range,N_bins)
 y_data=h_dense_plot
 ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 ax2.set_ylabel("|P(x)|^2")
-ax2.set_xlabel("coordinate x")
+ax2.set_xlabel("координата x")
 ax2.set_xlim(-p_range,p_range)
 ax2.step(x_data,y_data,color='green',linewidth = 1.1)
 

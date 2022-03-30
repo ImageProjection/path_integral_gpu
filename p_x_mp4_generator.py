@@ -64,7 +64,7 @@ def upd_p(frame_i):
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     acc_rate=dig_ar[frame_i][N_spots]
-    my_xlabel="sample traj No="+str(frame_i)+"\n"
+    my_xlabel="номер траектории:"+str(frame_i)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
     return line,
@@ -77,7 +77,7 @@ def upd_x(frame_i):
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     acc_rate=dig_ar[frame_i][N_spots]
-    my_xlabel="sample traj No="+str(frame_i)+"\n"
+    my_xlabel="номер траектории:"+str(frame_i)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
     return line,

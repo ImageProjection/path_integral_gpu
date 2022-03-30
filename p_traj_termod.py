@@ -151,7 +151,7 @@ global_aver_kink_metr_error=np.std(kink_metr_vals)/math.sqrt(N_sample_trajectori
 f_locals=open("local_averages.txt","w")
 
 #format is
-#E, T, V, p_dot, rel, kink_metr, beta
+#E, T, V, p_dot, rel, kink_metr, beta, 1/beta
 #same for errors, except error for beta is 0
 f_summary=open("global_averages.txt","a")
 
@@ -172,7 +172,8 @@ f_summary.write(str(global_aver_E)+", "
     +str(global_aver_p_dot)+", "
     +str(global_aver_rel)+", "
     +str(global_aver_kink_metr)+", "
-    +str(beta)+"\n")
+    +str(beta)+", "
+    +str(1/beta)+"\n")
 
 f_summary.write(str(global_aver_E_error)+", "
     +str(global_aver_T_error)+", "
@@ -180,6 +181,7 @@ f_summary.write(str(global_aver_E_error)+", "
     +str(global_aver_p_dot_error)+", "
     +str(global_aver_rel_error)+", "
     +str(global_aver_kink_metr_error)+", "
+    +str(0.0)+", "
     +str(0.0)+"\n")    
 
 
