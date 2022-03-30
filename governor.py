@@ -28,9 +28,9 @@ import numpy as np
 #clean folder before launch
 os.system("git clean -fx")
 
-beta_start=11.0
-beta_stop=14.0
-n_beta_points=4
+beta_start=9.5
+beta_stop=13.5
+n_beta_points=9
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 
 #launch for first point
@@ -97,5 +97,7 @@ for i in range(1,len(beta_list)):
     #copy results
     os.system(("cp "+files_list+" ../path_integral_gpu_results/"
     +multi_beta_folder_name+single_beta_folder_name))
+
+#copy last termod summary to overhead folder
 
 
