@@ -14,6 +14,9 @@ run:
 	./main
 
 #for NB
+nb_multi_beta_run:
+	/usr/bin/python governor.py
+
 #used for single beta, pase like: make recipe beta_val=11.06
 nb_long_run:
 	g++ -O2 main.cpp && ./a.out $(beta_val)\

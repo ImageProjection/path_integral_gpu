@@ -95,6 +95,6 @@ ax2.step(x_data,y_data,color='green',linewidth = 1.1)
 plt.locator_params(nbins=20)
 plt.tight_layout()
 
-plt.savefig("m="+str(m)+"_p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)
+plt.savefig("p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)
 
 

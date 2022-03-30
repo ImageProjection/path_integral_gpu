@@ -11,14 +11,14 @@ x_traj_evolution.mp4
 '''
 
 
-files_list="global_averages.txt "+
+files_list=("global_averages.txt "+
 "local_averages.txt "+
 "p_and_x_dens_plots.png "+
 "out_gen_des.txt "+
 "out_p_traj.txt "+
 "out_x_traj.txt "+
 "p_traj_evolution.mp4 "+
-"x_traj_evolution.mp4"
+"x_traj_evolution.mp4")
 
 
 import os
@@ -29,8 +29,8 @@ import numpy as np
 os.system("git clean -fx")
 
 beta_start=11.0
-beta_stop=15.0
-n_beta_points=10
+beta_stop=14.0
+n_beta_points=4
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 
 #launch for first point
@@ -62,39 +62,40 @@ print_termo_traj_flag=values[15]
 
 #create overhead launch folder
 date_time=strftime("%d.%m_%H:%M", localtime())
-multi_beta_folder_name=date_time
-    +"beta_"+str(round(beta_start,2))+"to"+str(round(beta_stop,2))
-    +"vf="+str(round(v_fermi,2))
-    +"m="+str(round(m,1))
-    +"w="+str(round(omega,2))
-    +"pb="+str(round(p_bottom,1))
-    +"N_wait="+str(N_waiting_trajectories)
-    +"N_sample"+str(N_sample_trajectories)
-    +"/"
+multi_beta_folder_name=(date_time
+    +"_beta_"+str(round(beta_start,2))+"to"+str(round(beta_stop,2))
+    +"_vf="+str(round(v_fermi,2))
+    +"_m="+str(round(m,1))
+    +"_w="+str(round(omega,2))
+    +"_pb="+str(round(p_bottom,1))
+    +"_N_wait="+str(N_waiting_trajectories)
+    +"_N_sample"+str(N_sample_trajectories)
+    +"/")
 os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name)
 
 #create local results folder  for first beta value, put results into it
-single_beta_folder_name="beta="+str(round(beta_start,2))+"a="
-    +str(round(beta/N_spots,2))+"/"
-os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
-    +single_beta_folder_name)
-os.system("cp "+files_list+"../path_integral_gpu_results/"
-    +multi_beta_folder_name+single_beta_folder_name)
+single_beta_folder_name=("beta="+str(round(beta_start,2))+"a="
+    +str(round(beta/N_spots,2))+"/")
+os.system(("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
+    +single_beta_folder_name))
+os.system(("cp "+files_list+" ../path_integral_gpu_results/"
+    +multi_beta_folder_name+single_beta_folder_name))
 
 #for each of the rest beta values
 #launch
 #put results into folder
-s
 for i in range(1,len(beta_list)):
     #launch
     os.system("make nb_long_run beta_val="+str(beta_list[i]))
-    single_beta_folder_name="beta="+str(round(beta_start,2))+"a="
-    +str(round(beta/N_spots,2))+"/"
+    single_beta_folder_name=("beta="+str(round(beta_start,2))+"a="
+    +str(round(beta/N_spots,2))+"/")
     #create folder
-    os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
-    +single_beta_folder_name)
+    single_beta_folder_name=("beta="+str(round(beta_list[i],2))+"a="
+    +str(round(beta/N_spots,2))+"/")
+    os.system(("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
+    +single_beta_folder_name))
     #copy results
-    os.system("cp "+files_list+"../path_integral_gpu_results/"
-    +multi_beta_folder_name+single_beta_folder_name)
+    os.system(("cp "+files_list+" ../path_integral_gpu_results/"
+    +multi_beta_folder_name+single_beta_folder_name))
 
 
