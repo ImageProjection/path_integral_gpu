@@ -278,8 +278,8 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=3;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
+	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=12000;//this many metropolis propositions are made for each of this traj-s
 	double beta=atof(argv[1]);
 	int n_periods=atoi(argv[2]);
 	double a=beta/N_spots;//0.035*2;
