@@ -28,9 +28,9 @@ import numpy as np
 #clean folder before launch
 os.system("git clean -fx")
 
-beta_start=9.5
-beta_stop=13.5
-n_beta_points=9
+beta_start=9
+beta_stop=13
+n_beta_points=3
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 
 #launch for first point

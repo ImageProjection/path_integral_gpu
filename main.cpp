@@ -12,7 +12,11 @@ normal_distribution<double> my_normal_double(0, 1);
 #define print_termo_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-#define sigma 3.3
+double sigma 3.3
+const double acc_up_border=0.3
+const double acc_low_border=0.2
+const double sigma_mult=1.06
+
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
 
@@ -46,6 +50,18 @@ double my_normal_double()//TODO try cuda for rng
 	return sqrt(-2*log(g2))*sin(2*M_PI*g1);
 }
 */
+void update_sigma(double acc_rate)
+{
+	if(acc_rate>acc_up_border)
+	{
+		sigma*=sigma_mult;
+	}
+	if(acc_rate<acc_low_border)
+	{
+		sigma/=sigma_mult;
+	}
+}
+
 void print_traj(FILE* out_traj,double* traj,double acc_rate)
 {
 	for (int i = 0; i < N_spots; i++)
@@ -254,7 +270,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	return accepted;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     struct timeval start, end;
 	gettimeofday(&start, NULL);
@@ -262,9 +278,9 @@ int main()
 	//termo parameters
 	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=12000;//this many metropolis propositions are made for each of this traj-s
-	const double a=0.0024*2*1.5*1.5;//0.035*2;
-	double beta=a*N_spots;
+	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
+	double beta=atof(argv[1]);
+	double a=beta/N_spots;//0.035*2;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
@@ -408,9 +424,10 @@ int main()
 	{
 		//evolve p-trajectory
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+		acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
+		update_sigma(acc_rate);
 		if (i%1==0)
 		{
-			acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
 			printf("Acceptance rate after reaching termo p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
 
@@ -443,9 +460,10 @@ int main()
 	{
 		//evolve p-trajectory
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+		acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
+		update_sigma(acc_rate)
 		if (i%1==0)
 		{
-			acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
 			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,acc_rate);
 		}
 
