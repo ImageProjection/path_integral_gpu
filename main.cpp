@@ -12,10 +12,11 @@ normal_distribution<double> my_normal_double(0, 1);
 #define print_termo_traj_flag 1
 #define N_spots 1024
 #define N_bins 1024
-double sigma 3.3
-const double acc_up_border=0.3
-const double acc_low_border=0.2
-const double sigma_mult=1.06
+
+double sigma=3.3;
+const double acc_up_border=30;
+const double acc_low_border=20;
+const double sigma_mult=1.06;
 
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
@@ -56,7 +57,7 @@ void update_sigma(double acc_rate)
 	{
 		sigma*=sigma_mult;
 	}
-	if(acc_rate<acc_low_border)
+	else if(acc_rate<acc_low_border)
 	{
 		sigma/=sigma_mult;
 	}
@@ -278,7 +279,7 @@ int main(int argc, char *argv[])
 	//termo parameters
 	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=30;//this many metropolis propositions are made for each of this traj-s
 	double beta=atof(argv[1]);
 	double a=beta/N_spots;//0.035*2;
 
@@ -461,7 +462,7 @@ int main(int argc, char *argv[])
 		//evolve p-trajectory
         accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
 		acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
-		update_sigma(acc_rate)
+		update_sigma(acc_rate);
 		if (i%1==0)
 		{
 			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,acc_rate);
