@@ -28,13 +28,13 @@ import numpy as np
 #clean folder before launch
 os.system("git clean -fx")
 
-beta_start=9
-beta_stop=13
-n_beta_points=3
+beta_start=14
+beta_stop=15
+n_beta_points=2
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
-
+n_periods_list=[2,9]#,6,10,15,25]
 #launch for first point
-os.system("make nb_long_run beta_val="+str(beta_start))
+os.system("make nb_long_run beta_val="+str(beta_start)+" n_periods="+str(n_periods_list[0]))
 
 #grab simulation parameters from out_gen_des.txt
 values=[]
@@ -86,9 +86,7 @@ os.system(("cp "+files_list+" ../path_integral_gpu_results/"
 #put results into folder
 for i in range(1,len(beta_list)):
     #launch
-    os.system("make nb_long_run beta_val="+str(beta_list[i]))
-    single_beta_folder_name=("beta="+str(round(beta_start,2))+"a="
-    +str(round(beta/N_spots,2))+"/")
+    os.system("make nb_long_run beta_val="+str(beta_list[i])+" n_periods="+str(n_periods_list[i]))
     #create folder
     single_beta_folder_name=("beta="+str(round(beta_list[i],2))+"a="
     +str(round(beta/N_spots,2))+"/")

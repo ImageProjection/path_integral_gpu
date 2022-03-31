@@ -278,9 +278,10 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=30;//this many metropolis propositions are made for each of this traj-s
+	const int N_sample_trajectories=3;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
 	double beta=atof(argv[1]);
+	int n_periods=atoi(argv[2]);
 	double a=beta/N_spots;//0.035*2;
 
 	//hamiltonian parameters
@@ -405,10 +406,10 @@ int main(int argc, char *argv[])
 	//actual init
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj_new[i]=h_p_traj[i]=ham_params.p_b/3;
+		h_p_traj[i]=ham_params.p_b*sin(n_periods*i*1.0/N_spots*2*M_PI);
 	}
 
-	printf("initial taj action is: %.5lf\n",S(h_p_traj,ham_params));
+	printf("initial traj action is: %.5lf\n",S(h_p_traj,ham_params));
 	double p_prev_node,p_next_node;
 	for(int i=0; i<N_spots; i++)
 	{
