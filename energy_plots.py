@@ -3,16 +3,36 @@ import numpy as np
 plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
+plt.rcParams['font.size']=r'20'
 
-
+energies_list=[]
+energy_error_list=[]
+beta_list=[]
+temperatures_list=[]
 #parse global averages file for E and \beta
-f=open("../path_integral_gpu_results/global_averages.txt")
+f=open("../path_integral_gpu/global_averages.txt",'r')
+lines=f.readlines()
+for i in range(0,len(lines),2):
+    val_line=list(map(float,lines[i].split(", ")))
+    error_line=list(map(float,lines[i+1].split(", ")))
+    energies_list.append(val_line[0])
+    energy_error_list.append(error_line[0])
+    beta_list.append(val_line[6])
+    temperatures_list.append(1/val_line[6])
+
 
 #plot energies
 fig=plt.figure()
-ax1=fig.add_subplot(1,1,1)
-ax1.plot(beta_list,,marker='o')
+fig.subplots_adjust(hspace=.5)
+ax1=fig.add_subplot(2,1,1)
+ax1.set_xlabel(r'значение параметра $\beta$',fontsize='20')
+ax1.set_ylabel(r'энергия $E$ (условные единицы)',fontsize='20')
+ax1.grid()
+ax1.plot(beta_list,energies_list,marker='o')
 
-ax1.set_xlabel(r'значение параметра $\beta$',fontsize='22')
-ax1.set_ylabel(r'энергия $E$',fontsize='22')
-ax1.set_title(r'зависимость энергии $E$ от обратной температуры $\beta$')
+ax2=fig.add_subplot(2,1,2)
+ax2.set_xlabel(r'значение температуры (условные единицы)',fontsize='20')
+ax2.set_ylabel(r'энергия $E$ (условные единицы)',fontsize='20')
+ax2.grid()
+ax2.plot(temperatures_list,energies_list,marker='o')
+plt.show()
