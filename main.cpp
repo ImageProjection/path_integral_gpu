@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
 	ham_params.omega=5.5;
 	ham_params.p_b=10;//corresponds to 'bottom' of potential
 	ham_params.a=a;
-
+	
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;

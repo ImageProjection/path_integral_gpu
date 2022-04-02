@@ -24,16 +24,20 @@ files_list=("global_averages.txt "+
 import os
 from time import localtime, strftime
 import numpy as np
-
-uniq_id=0
+import matplotlib.pyplot as plt
+plt.rcParams['text.usetex'] = True
+plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
+plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
+#eg ax1.set_xlabel(r'значение параметра $\beta$')
+uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
 
-beta_start=15
-beta_stop=15
-n_beta_points=5
+beta_start=9
+beta_stop=16
+n_beta_points=8
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
-n_periods_list=[2,6,10,15,25]
+n_periods_list=[25,25,25,25,25,25,25,25]
 #launch for first point
 os.system("make nb_long_run beta_val="+str(beta_start)+" n_periods="+str(n_periods_list[0]))
 
