@@ -23,6 +23,12 @@ import matplotlib.animation as animation
 import math
 import time
 
+import matplotlib.pyplot as plt
+import numpy as np
+plt.rcParams['text.usetex'] = True
+plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
+plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
+
 #grab simulaton parameters
 values=[]
 spf=open("out_gen_des.txt",'r')

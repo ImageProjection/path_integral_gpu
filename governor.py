@@ -29,6 +29,7 @@ plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
 #eg ax1.set_xlabel(r'значение параметра $\beta$')
+
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
@@ -104,5 +105,6 @@ for i in range(1,len(beta_list)):
     +multi_beta_folder_name+single_beta_folder_name))
 
 #copy last termod summary to overhead folder
-
+os.system(("cp "+"global_averages.txt " + "../path_integral_gpu_results/"
+    +multi_beta_folder_name))
 
