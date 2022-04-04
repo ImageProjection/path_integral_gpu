@@ -279,9 +279,9 @@ int main(int argc, char *argv[])
 	//termo parameters
 	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=40;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=300;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=3000;//this many metropolis propositions are made for each of this traj-s
 	double beta=atof(argv[1]);
-	int n_periods=atoi(argv[2]);
+	//int n_periods=atoi(argv[2]); its for testing p_b
 	double a=5e-3;//0.035*2;
 	N_spots=int(beta/a);
 
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
 	ham_params.v_fermi=1;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_b=0.5;//corresponds to 'bottom' of potential
+	ham_params.p_b=atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis

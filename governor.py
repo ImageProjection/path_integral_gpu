@@ -34,11 +34,11 @@ uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
 
-beta_start=9
-beta_stop=16
+beta_start=5
+beta_stop=5
 n_beta_points=8
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
-n_periods_list=[25,25,25,25,25,25,25,25]
+n_periods_list=[0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1]#p_bottom for now
 #launch for first point
 os.system("make nb_long_run beta_val="+str(beta_start)+" n_periods="+str(n_periods_list[0]))
 
@@ -81,7 +81,7 @@ os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name)
 
 #create local results folder  for first beta value, put results into it
 single_beta_folder_name=("beta="+str(round(beta_start,2))+"a="
-    +str(round(beta/N_spots,2))+"_uid"+str(uniq_id)+"/")
+    +str(round(beta/N_spots,2))+"pb="+str(round(n_periods_list[0],2)) +"_uid"+str(uniq_id)+"/")
 uniq_id+=1
 os.system(("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
     +single_beta_folder_name))
@@ -96,7 +96,7 @@ for i in range(1,len(beta_list)):
     os.system("make nb_long_run beta_val="+str(beta_list[i])+" n_periods="+str(n_periods_list[i]))
     #create folder
     single_beta_folder_name=("beta="+str(round(beta_list[i],2))+"a="
-    +str(round(beta/N_spots,2))+"_uid"+str(uniq_id)+"/")
+        +str(round(beta/N_spots,2))+"pb="+str(round(n_periods_list[i],2)) + "_uid"+str(uniq_id)+"/")
     uniq_id+=1
     os.system(("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
     +single_beta_folder_name))
