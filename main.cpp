@@ -10,13 +10,13 @@ normal_distribution<double> my_normal_double(0, 1);
 
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
-#define N_spots 1024
 #define N_bins 1024
+int N_spots=1024;
 
-double sigma=0.4;
+double sigma=0.3;
 const double acc_up_border=30;
-const double acc_low_border=20;
-const double sigma_mult=1.06;
+const double acc_low_border=23;
+const double sigma_mult=1.12;
 
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
@@ -277,19 +277,20 @@ int main(int argc, char *argv[])
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=150; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
+	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=40;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=300;//this many metropolis propositions are made for each of this traj-s
 	double beta=atof(argv[1]);
 	int n_periods=atoi(argv[2]);
-	double a=beta/N_spots;//0.035*2;
+	double a=5e-3;//0.035*2;
+	N_spots=int(beta/a);
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=1;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_b=2;//corresponds to 'bottom' of potential
+	ham_params.p_b=0.5;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
@@ -302,12 +303,12 @@ int main(int argc, char *argv[])
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
-	const double p_range=20;
-	const double x_range=15;//tweaked manually, values outside are discarded
+	const double p_range=4;
+	const double x_range=4;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
-	const double traj_p_range=38;
-	const double traj_x_range=38;
+	const double traj_p_range=4;
+	const double traj_x_range=4;
 
 	//display parameters to terminal
 	printf("===CPP CODE LAUNCH===\n");
@@ -406,7 +407,7 @@ int main(int argc, char *argv[])
 	//actual init
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=ham_params.p_b*sin(n_periods*i*1.0/N_spots*2*M_PI);
+		h_p_traj[i]=ham_params.p_b;//*sin(n_periods*i*1.0/N_spots*2*M_PI);
 	}
 
 	printf("initial traj action is: %.5lf\n",S(h_p_traj,ham_params));
