@@ -13,7 +13,7 @@ normal_distribution<double> my_normal_double(0, 1);
 #define N_spots 1024
 #define N_bins 1024
 
-double sigma=3.3;
+double sigma=0.4;
 const double acc_up_border=30;
 const double acc_low_border=20;
 const double sigma_mult=1.06;
@@ -277,19 +277,19 @@ int main(int argc, char *argv[])
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=30;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=12000;//this many metropolis propositions are made for each of this traj-s
+	const int N_waiting_trajectories=150; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=300;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=300;//this many metropolis propositions are made for each of this traj-s
 	double beta=atof(argv[1]);
 	int n_periods=atoi(argv[2]);
 	double a=beta/N_spots;//0.035*2;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
-	ham_params.v_fermi=14;
-	ham_params.m=4.5;
-	ham_params.omega=5.5;
-	ham_params.p_b=10;//corresponds to 'bottom' of potential
+	ham_params.v_fermi=1;
+	ham_params.m=1;
+	ham_params.omega=1;
+	ham_params.p_b=2;//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
