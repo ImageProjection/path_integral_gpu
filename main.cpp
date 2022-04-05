@@ -277,12 +277,12 @@ int main(int argc, char *argv[])
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=15; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=40;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=3000;//this many metropolis propositions are made for each of this traj-s
-	double beta=atof(argv[1]);
+	const int N_waiting_trajectories=15+70; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=80;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=800;//this many metropolis propositions are made for each of this traj-s
+	double beta=5;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=5e-3;//0.035*2;
+	double a=3*5e-3;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
 	ham_params.v_fermi=1;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_b=atof(argv[2]);//corresponds to 'bottom' of potential
+	ham_params.p_b=2;//atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
@@ -303,12 +303,12 @@ int main(int argc, char *argv[])
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
-	const double p_range=4;
-	const double x_range=4;//tweaked manually, values outside are discarded
+	const double p_range=10;
+	const double x_range=10;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
-	const double traj_p_range=4;
-	const double traj_x_range=4;
+	const double traj_p_range=10;
+	const double traj_x_range=10;
 
 	//display parameters to terminal
 	printf("===CPP CODE LAUNCH===\n");
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
 	//actual init
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=ham_params.p_b;//*sin(n_periods*i*1.0/N_spots*2*M_PI);
+		h_p_traj[i]=ham_params.p_b*3;//*sin(n_periods*i*1.0/N_spots*2*M_PI);
 	}
 
 	printf("initial traj action is: %.5lf\n",S(h_p_traj,ham_params));

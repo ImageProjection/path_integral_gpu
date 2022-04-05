@@ -61,6 +61,7 @@ def upd_p(frame_i):
     ax1.set_xlim([1,N_spots+1])
     ax1.set_ylim([-traj_p_range,traj_p_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
+    ax1.set_yticks(list(plt.yticks()[0]) + [p_bottom])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
     acc_rate=dig_ar[frame_i][N_spots]

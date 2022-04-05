@@ -36,9 +36,9 @@ os.system("git clean -fx")
 
 beta_start=5
 beta_stop=5
-n_beta_points=8
+n_beta_points=10
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
-n_periods_list=[0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1]#p_bottom for now
+n_periods_list=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]#p_bottom for now
 #launch for first point
 os.system("make nb_long_run beta_val="+str(beta_start)+" n_periods="+str(n_periods_list[0]))
 
