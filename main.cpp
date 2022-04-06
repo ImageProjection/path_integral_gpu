@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
 	const int N_steps_per_traj=800;//this many metropolis propositions are made for each of this traj-s
 	double beta=5;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=3*5e-3;//0.035*2;
+	double a=2*3*5e-3;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
 	ham_params.v_fermi=1;
 	ham_params.m=1;
 	ham_params.omega=1;
-	ham_params.p_b=2;//atof(argv[2]);//corresponds to 'bottom' of potential
+	ham_params.p_b=1.8;//atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
