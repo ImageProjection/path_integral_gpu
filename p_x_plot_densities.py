@@ -31,6 +31,8 @@ p_range=values[10]
 x_range=values[11]
 traj_p_range=values[12]
 traj_x_range=values[13]
+sigma=values[14]
+print_termo_traj_flag=values[15]
 
 N_bins=1024
 discarded_p_points=0
@@ -54,6 +56,10 @@ h_hist=np.zeros(N_bins)
 #main for p
 ax1=fig.add_subplot(2,1,1)
 fp=open("out_p_traj.txt",'r')
+#skip to sampling trajectories part in both files
+if print_termo_traj_flag:
+    for i in range(N_waiting_trajectories):
+        fp.readline()
 #read each line add to cumulative histogram
 for line in fp:
         full_line=list(map(float,line.split(",")))
