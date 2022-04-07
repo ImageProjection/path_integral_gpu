@@ -13,7 +13,7 @@ normal_distribution<double> my_normal_double(0, 1);
 #define N_bins 1024
 int N_spots=1024;
 
-double sigma=0.1;
+double sigma=0.9;
 const double acc_up_border=30;
 const double acc_low_border=23;
 const double sigma_mult=1.12;
@@ -280,9 +280,9 @@ int main(int argc, char *argv[])
 	const int N_waiting_trajectories=85*4; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=800/2;//this many metropolis propositions are made for each of this traj-s
-	double beta=20;//atof(argv[1]);
+	double beta=20*16;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=25*10e-3;//0.035*2;
+	double a=100*10e-3;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
