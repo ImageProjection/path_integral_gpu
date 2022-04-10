@@ -280,9 +280,9 @@ int main(int argc, char *argv[])
 	const int N_waiting_trajectories=85*4; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=800/2;//this many metropolis propositions are made for each of this traj-s
-	double beta=20*16;//atof(argv[1]);
+	double beta=20;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=100*10e-3;//0.035*2;
+	double a=0.2;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
@@ -304,11 +304,11 @@ int main(int argc, char *argv[])
 
 	//histogram parameters
 	const double p_range=10;
-	const double x_range=10;//tweaked manually, values outside are discarded
+	const double x_range=1000;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
 	const double traj_p_range=10;
-	const double traj_x_range=10;
+	const double traj_x_range=1000;
 
 	//display parameters to terminal
 	printf("===CPP CODE LAUNCH===\n");

@@ -2,7 +2,7 @@
 input: p-trajectories file
 output: x-trajectories file of same format
 '''
-
+import numpy as np
 #grab simulaton parameters
 values=[]
 spf=open("out_gen_des.txt",'r')
@@ -26,6 +26,7 @@ traj_p_range=values[12]
 traj_x_range=values[13]
 
 def cumulative_transform(p_traj):
+    '''
     sum=0
     x_traj=[]
     x_traj.append(p_traj[0]*a/m)
@@ -33,7 +34,14 @@ def cumulative_transform(p_traj):
         x_traj.append(x_traj[i-1]+p_traj[i]*a/m)
     x_traj.append(p_traj[N_spots])#carry over acc_rate
     return x_traj
-
+    '''
+    x_traj=np.zeros(N_spots+1)
+    for j in range(N_spots):
+        x_traj[j]=0
+        for i in range(j+1):
+            x_traj[j]+=p_traj[j]
+    x_traj[N_spots]=p_traj[N_spots]
+    return x_traj*a/m
         
 #main
 p_file=open("out_p_traj.txt",'r')

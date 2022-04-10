@@ -52,7 +52,7 @@ def add_hist(p_traj, h_hist, p_range):
 
     
 fig=plt.figure()
-h_hist=np.zeros(N_bins)
+h_p_hist=np.zeros(N_bins)
 #main for p
 ax1=fig.add_subplot(2,1,1)
 fp=open("out_p_traj.txt",'r')
@@ -64,13 +64,13 @@ if print_termo_traj_flag:
 for line in fp:
         full_line=list(map(float,line.split(",")))
         p_traj=full_line[0:N_spots]
-        discarded_p_points+=add_hist(p_traj,h_hist, p_range)
+        discarded_p_points+=add_hist(p_traj,h_p_hist, p_range)
 
-h_dense_plot=h_hist/(np.sum(h_hist)*2.0*p_range/N_bins)
+h_p_dense_plot=h_p_hist/(np.sum(h_p_hist)*2.0*p_range/N_bins)
 
 
 x_data=np.linspace(-p_range,p_range,N_bins)
-y_data=h_dense_plot
+y_data=h_p_dense_plot
 ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 ax1.set_ylabel("|P(p)|^2")
 ax1.set_xlabel("координата p")
@@ -78,22 +78,23 @@ ax1.set_xlim(-p_range,p_range)
 ax1.step(x_data,y_data,color='red',linewidth = 1.1)
 
 #main for x
+h_x_hist=np.zeros(N_bins)
 ax2=fig.add_subplot(2,1,2)
-fp=open("out_x_traj.txt",'r')
+fx=open("out_x_traj.txt",'r')
 #read each line add to cumulative histogram
-for line in fp:
+for line in fx:
         full_line=list(map(float,line.split(",")))
         x_traj=full_line[0:N_spots]
-        discarded_x_points+=add_hist(x_traj,h_hist, x_range)
+        discarded_x_points+=add_hist(x_traj,h_x_hist, x_range)
 
-h_dense_plot=h_hist/(np.sum(h_hist)*2.0*x_range/N_bins)
+h_x_dense_plot=h_x_hist/(np.sum(h_x_hist)*2.0*x_range/N_bins)
 
-x_data=np.linspace(-p_range,p_range,N_bins)
-y_data=h_dense_plot
+x_data=np.linspace(-x_range,x_range,N_bins)
+y_data=h_x_dense_plot
 ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 ax2.set_ylabel("|P(x)|^2")
 ax2.set_xlabel("координата x")
-ax2.set_xlim(-p_range,p_range)
+ax2.set_xlim(-x_range,x_range)
 ax2.step(x_data,y_data,color='green',linewidth = 1.1)
 
 
