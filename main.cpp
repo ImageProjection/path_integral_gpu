@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
 	const int N_steps_per_traj=800/2;//this many metropolis propositions are made for each of this traj-s
 	double beta=20;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=0.2;//0.035*2;
+	double a=0.5;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
