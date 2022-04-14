@@ -262,6 +262,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 
 				h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double(gen)
 				-met_params.e_lang*S_der;
+				delta_lang=h_p_traj_new[i]-h_p_traj[i];
 			}
 			copy_traj(h_p_traj, h_p_traj_new);
 		}
@@ -275,7 +276,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			for(int i=0; i<N_spots; i++)
 			{
 				h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
-				//delta_molec=h_p_traj_new[i]-h_p_traj[i];
+				delta_molec=h_p_traj_new[i]-h_p_traj[i];
 			}
 			//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
 			for(int i=0; i<N_spots; i++)
@@ -327,11 +328,11 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=85*4; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=3000;//this many metropolis propositions are made for each of this traj-s
+	const int N_sample_trajectories=320*5*5;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=7000;//this many metropolis propositions are made for each of this traj-s
 	double beta=3;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=0.02;//0.035*2;
+	double a=0.03;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
@@ -348,7 +349,7 @@ int main(int argc, char *argv[])
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.e_lang=0.000025;
+	met_params.e_lang=2.5e-5;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters

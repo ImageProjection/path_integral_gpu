@@ -75,6 +75,7 @@ ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
 ax1.set_ylabel("|P(p)|^2")
 ax1.set_xlabel("координата p")
 ax1.set_xlim(-p_range,p_range)
+ax1.set_xticks(np.arange(-p_range,p_range,1.0))
 ax1.step(x_data,y_data,color='red',linewidth = 1.1)
 
 #main for x
