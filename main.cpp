@@ -328,10 +328,10 @@ int main(int argc, char *argv[])
 	//termo parameters
 	const int N_waiting_trajectories=85*4; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=800/2;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=3000;//this many metropolis propositions are made for each of this traj-s
 	double beta=3;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=0.01;//0.035*2;
+	double a=0.02;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
@@ -347,8 +347,8 @@ int main(int argc, char *argv[])
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=9;
-	met_params.T_lang=3;//do not touch, unless it is pure Langevin
-	met_params.e_lang=0.00005;
+	met_params.T_lang=1;//do not touch, unless it is pure Langevin
+	met_params.e_lang=0.000025;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
