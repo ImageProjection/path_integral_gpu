@@ -233,7 +233,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	int accepted=0;	
 	double a=ham_params.a;
 	double m=ham_params.m;
-	double p_b=ham_params.p_b;
+	double pb=ham_params.p_b;
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	double p_prev_node,p_next_node,S_der_A,S_der_B,S_old,S_new,prob_acc,gamma;
@@ -258,7 +258,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				p=h_p_traj[i];
 
 				S_der=( (2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)
-				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4pb*pb*pb*pb*m*m*v_fermi*v_fermi));
+				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*pb*pb*pb*pb*m*m*v_fermi*v_fermi));
 
 				h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double(gen)
 				-met_params.e_lang*S_der;
@@ -285,7 +285,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				p=h_p_traj_new[i];
 
 				S_der=( (2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)
-				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4pb*pb*pb*pb*m*m*v_fermi*v_fermi));
+				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*pb*pb*pb*pb*m*m*v_fermi*v_fermi));
 				
 				h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*S_der;
 			}
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=9;
 	met_params.T_lang=3;//do not touch, unless it is pure Langevin
-	met_params.e_lang=0.0005;
+	met_params.e_lang=0.00005;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
@@ -377,17 +377,8 @@ int main(int argc, char *argv[])
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
 	out_gen_des=fopen("out_gen_des.txt","w");
-	//FILE *out_energies;
-	//out_energies=fopen("out_energies.txt","w");
-	//double aver_T,aver_V,aver_p_dot;
 	FILE *out_p_traj;
 	out_p_traj=fopen("out_p_traj.txt","w");
-	//FILE *out_p_dens_plot;
-	//out_p_dens_plot=fopen("out_p_dens_plot.txt","w");
-	//FILE *out_x_traj;
-	//out_x_traj=fopen("out_x_traj.txt","w");
-	//FILE *out_x_dens_plot;
-	//out_x_dens_plot=fopen("out_x_dens_plot.txt","w");
 
 	//print general simulation description to file
 	fprintf(out_gen_des,"N_spots,%d\n",N_spots);
@@ -407,10 +398,6 @@ int main(int argc, char *argv[])
 	fprintf(out_gen_des,"sigma,%.8lf\n",sigma);
 	fprintf(out_gen_des,"print_termo_traj_flag,%d\n",print_termo_traj_flag);
 
-	
-
-	
-	
 	//allocate memory for p and x trajs on cpu (using heap for size)
 	double* h_p_traj;
 	h_p_traj=(double*)malloc(N_spots*sizeof(double));
@@ -422,6 +409,8 @@ int main(int argc, char *argv[])
 	h_pi_vect=(double*)malloc(N_spots*sizeof(double));
 	double* h_pi_vect_new;
 	h_pi_vect_new=(double*)malloc(N_spots*sizeof(double));
+	double* h_pi_vect_prev_step;
+	h_pi_vect_prev_step=(double*)malloc(N_spots*sizeof(double));
 	double* h_x_traj;
 	h_x_traj=(double*)malloc(N_spots*sizeof(double));
 
@@ -458,15 +447,19 @@ int main(int argc, char *argv[])
 	{
 		h_p_traj[i]=ham_params.p_b*2;//*sin(n_periods*i*1.0/N_spots*2*M_PI);
 	}
+	for(int i=0; i<N_spots; i++)
+	{
+		h_pi_vect[i]=0;
+	}
 
 	printf("initial traj action is: %.5lf\n",S(h_p_traj,ham_params));
-	double p_prev_node,p_next_node;
+	/*double p_prev_node,p_next_node;
 	for(int i=0; i<N_spots; i++)
 	{
 		p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
 		p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
 		h_pi_vect[i]=-met_params.e_molec*0.5*( a*h_p_traj[i]/ham_params.m + (2*h_p_traj[i]-(p_prev_node+p_next_node))/(ham_params.a*ham_params.m*ham_params.omega*ham_params.omega)  );
-	}
+	}*/
 
 	
 	double accepted,acc_rate;
@@ -475,8 +468,8 @@ int main(int argc, char *argv[])
 	for (int i=0; i<N_waiting_trajectories; i++)
 	{
 		//evolve p-trajectory
-        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
-		acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
+        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+		acc_rate=accepted/(N_steps_per_traj)*100;
 		update_sigma(acc_rate);
 		if (i%1==0)
 		{
@@ -511,8 +504,8 @@ int main(int argc, char *argv[])
 	for (int i=0; i<N_sample_trajectories; i++)
 	{
 		//evolve p-trajectory
-        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
-		acc_rate=accepted/(N_steps_per_traj*N_spots)*100;
+        accepted=perform_sweeps(h_p_traj, h_p_traj_new, h_p_traj_prev_step, h_pi_vect_prev_step, h_pi_vect, h_pi_vect_new, N_steps_per_traj, ham_params, met_params);
+		acc_rate=accepted/(N_steps_per_traj)*100;
 		update_sigma(acc_rate);
 		if (i%1==0)
 		{
