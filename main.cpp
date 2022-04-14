@@ -224,6 +224,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 
 
 int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
+	double* h_pi_vect_prev_step,
 	double* h_pi_vect, double* h_pi_vect_new, int N_steps,
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
@@ -236,94 +237,82 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	double v_fermi=ham_params.v_fermi;
 	double omega=ham_params.omega;
 	double p_prev_node,p_next_node,S_der_A,S_der_B,S_old,S_new,prob_acc,gamma;
-	double p,S_der_var,S_der_con;
+	double p,S_der;
     for (int steps_counter=0; steps_counter < N_steps; steps_counter++)
     {
 		//backup trajectory before taking a step, so that if proposition is not accepted
 		//h_p_traj, from which mp4 is made, can be restored
 		copy_traj(h_p_traj_prev_step, h_p_traj);
 		copy_traj(h_pi_vect_prev_step,h_pi_vect);
+
 		//evaluate trajectory for metropolis proposition (==make a step)
-		for (int cycles_counter=0; cycles_counter < met_params.N_cycles_per_step; cycles_counter++)
+
+		//perform iterations using Langevin algo
+		for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
 		{
-			//perform iterations using Langevin algo
-			for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
+			//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
+			for(int i=0; i<N_spots; i++)
 			{
-				//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
-				for(int i=0; i<N_spots; i++)
-				{
-					
-					p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
-					p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
-					p=h_p_traj[i];
+				p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
+				p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
+				p=h_p_traj[i];
 
-					S_der_A=(2*p-(p_prev_node+p_next_node))/(a*m*omega*omega);
+				S_der=( (2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)
+				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4pb*pb*pb*pb*m*m*v_fermi*v_fermi));
 
-					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
-					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
-					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-					lang_var=sqrt(2*met_params.e_lang)*my_normal_double(gen);
-					h_p_traj_new[i]=h_p_traj[i] + lang_var
-								- met_params.e_lang*(S_der_A + S_der_B);
-					delta_lang=h_p_traj_new[i]-h_p_traj[i];
-					//h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*my_normal_double();
-				}
-				copy_traj(h_p_traj, h_p_traj_new);
+				h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double(gen)
+				-met_params.e_lang*S_der;
 			}
-			//perform iterations using molecular dynamics algo
-			for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
-			{
-				//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
-				//especially when doing more then 1 langevin step (is it just translation, so we can keep pi?)
-				//phi(1)=phi(0)+eps*pi(1/2)
-				for(int i=0; i<N_spots; i++)
-				{
-					h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
-					delta_molec=h_p_traj_new[i]-h_p_traj[i];
-				}
-				//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
-				for(int i=0; i<N_spots; i++)
-				{
-					//p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
-					//p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
-					p=h_p_traj_new[i];
-
-					S_der_A=(2*p-(h_p_traj_new[(i-1+N_spots)%N_spots]+h_p_traj_new[(i+1+N_spots)%N_spots]))
-					/(a*m*omega*omega);
-
-					S_der_var=p_b*p_b * (p*p-p_b*p_b)*(p*p-p_b*p_b);
-					S_der_con=4*p_b*p_b*m*m*v_fermi*v_fermi;
-					S_der_B=a*v_fermi*p*(p*p - p_b*p_b) / sqrt(S_der_var + S_der_con);
-
-					h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*(S_der_A + S_der_B);
-				}
-				copy_traj(h_p_traj, h_p_traj_new);
-				copy_traj(h_pi_vect, h_pi_vect_new);
-
-			}
+			copy_traj(h_p_traj, h_p_traj_new);
 		}
+
+		//perform iterations using molecular dynamics algo
+		for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
+		{
+			//TODO make propoper initialisation for pi and decide what to do with pi when using langevin,
+			//especially when doing more then 1 langevin step (is it just translation, so we can keep pi?)
+			//phi(1)=phi(0)+eps*pi(1/2)
+			for(int i=0; i<N_spots; i++)
+			{
+				h_p_traj_new[i]=h_p_traj[i] + met_params.e_molec*h_pi_vect[i];
+				//delta_molec=h_p_traj_new[i]-h_p_traj[i];
+			}
+			//pi(3/2)=pi(1/2)-eps*{ds}/{dphi(1)}
+			for(int i=0; i<N_spots; i++)
+			{
+				p_prev_node=h_p_traj_new[(i-1+N_spots)%N_spots];
+				p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
+				p=h_p_traj_new[i];
+
+				S_der=( (2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)
+				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4pb*pb*pb*pb*m*m*v_fermi*v_fermi));
+				
+				h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*S_der;
+			}
+			copy_traj(h_p_traj, h_p_traj_new);
+			copy_traj(h_pi_vect, h_pi_vect_new);
+		}
+
 		//accept or discard this trajectory using standard metropolis fork
 		S_old=S(h_p_traj_prev_step, ham_params);
 		S_new=S(h_p_traj, ham_params);
 		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 		if (S_new < S_old)
 		{
-			;
 			accepted++;
 		}
 			else
 			{
-				temp=exp(S_old-S_new);
 				prob_acc=exp(S_old-S_new);
 				gamma=(double)rand()/RAND_MAX;
 				if (gamma < prob_acc)//then accept
 					{
-						;
 						accepted++;
 					}
 					else//do not accept, thus revert
 					{
 						copy_traj(h_p_traj, h_p_traj_prev_step);
+						copy_traj(h_pi_vect, h_pi_vect_prev_step);
 					}
 			}
 
