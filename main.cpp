@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
 	//termo parameters
 	const int N_waiting_trajectories=85; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=2000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=600;//this many metropolis propositions are made for each of this traj-s
 	double beta=3;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
 	double a=0.015;//0.035*2;
@@ -341,8 +341,8 @@ int main(int argc, char *argv[])
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=1;
 	ham_params.m=0.1;
-	ham_params.omega=3;
-	ham_params.p_b=2;//atof(argv[2]);//corresponds to 'bottom' of potential
+	ham_params.omega=5;
+	ham_params.p_b=1.5;//atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
