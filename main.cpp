@@ -229,7 +229,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
 {	
-	double temp, delta_molec, delta_lang, lang_var;									 
+	double temp, delta_molec, delta_lang, delta_lang_der, delta_lang_rand;									 
 	int accepted=0;	
 	double a=ham_params.a;
 	double m=ham_params.m;
@@ -263,6 +263,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double(gen)
 				-met_params.e_lang*S_der;
 				delta_lang=h_p_traj_new[i]-h_p_traj[i];
+				delta_lang_der=-met_params.e_lang*S_der;
+				delta_lang_rand=delta_lang-delta_lang_der;
 			}
 			copy_traj(h_p_traj, h_p_traj_new);
 		}
@@ -328,11 +330,11 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=85; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=5000;//this many metropolis propositions are made for each of this traj-s
-	double beta=4;//atof(argv[1]);
+	const int N_sample_trajectories=320*7;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=2000;//this many metropolis propositions are made for each of this traj-s
+	double beta=3;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=0.04;//0.035*2;
+	double a=0.015;//0.035*2;
 	N_spots=int(beta/a);
 
 	//hamiltonian parameters
@@ -347,9 +349,9 @@ int main(int argc, char *argv[])
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=19;
+	met_params.T_molec=99;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.e_lang=2.5e-5;
+	met_params.e_lang=2.5e-5*5;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
