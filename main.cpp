@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=85; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=320*7;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=2000;//this many metropolis propositions are made for each of this traj-s
 	double beta=3;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
