@@ -8,7 +8,7 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define lambda 300.0
+#define lambda 5000.0
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
 #define N_bins 1024
@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 	//termo parameters
 	const int N_waiting_trajectories=85; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=3000;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=1500;//this many metropolis propositions are made for each of this traj-s
 	N_spots=512;//int(beta/a);
 	double beta=1/0.7;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=9;
+	met_params.T_molec=29;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
 	met_params.e_lang=2.5e-6;
 	met_params.e_molec=met_params.e_lang;//for correspondence
