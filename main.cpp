@@ -8,7 +8,7 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define lambda 300.0
+#define lambda 5000.0
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
 #define N_bins 1024
@@ -258,9 +258,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
 				p=h_p_traj[i];
 
-				S_der=( (2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)
-				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*pb*pb*pb*pb*m*m*v_fermi*v_fermi));
-
+				S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
 				h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double(gen)
 				-met_params.e_lang*S_der;
 				delta_lang=h_p_traj_new[i]-h_p_traj[i];
@@ -288,9 +286,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
 				p=h_p_traj_new[i];
 
-				S_der=( (2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)
-				+a*v_fermi*p*(p*p-pb*pb)/sqrt(pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*pb*pb*pb*pb*m*m*v_fermi*v_fermi));
-				
+				S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
+
 				h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*S_der;
 			}
 			copy_traj(h_p_traj, h_p_traj_new);
@@ -350,9 +347,9 @@ int main(int argc, char *argv[])
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=4;
+	met_params.T_molec=9;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.e_lang=2.5e-6*5;
+	met_params.e_lang=2.5e-6;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
