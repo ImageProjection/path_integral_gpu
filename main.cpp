@@ -8,7 +8,7 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define lambda 5000.0
+#define lambda 300.0
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
 #define N_bins 1024
@@ -333,34 +333,34 @@ int main(int argc, char *argv[])
 	const int N_waiting_trajectories=85; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=300;//this many metropolis propositions are made for each of this traj-s
-	double beta=3;//atof(argv[1]);
+	N_spots=512;//int(beta/a);
+	double beta=1/0.7;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=0.015;//0.035*2;
-	N_spots=int(beta/a);
+	double a=beta/N_spots;//0.035*2;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=1;
-	ham_params.m=0.1;
-	ham_params.omega=5;
-	ham_params.p_b=1.5;//atof(argv[2]);//corresponds to 'bottom' of potential
+	ham_params.m=1;
+	ham_params.omega=1;
+	ham_params.p_b=1;//atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=49;
+	met_params.T_molec=4;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.e_lang=2.5e-5*5;
+	met_params.e_lang=2.5e-6*5;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
-	const double p_range=10;
+	const double p_range=3;
 	const double x_range=1000;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
-	const double traj_p_range=10;
+	const double traj_p_range=3;
 	const double traj_x_range=1000;
 
 	//display parameters to terminal
