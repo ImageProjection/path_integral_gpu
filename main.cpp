@@ -8,6 +8,7 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
+#define lambda 5000.0
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
 #define N_bins 1024
@@ -215,7 +216,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 		p=h_traj[k];
 		S_part_A += (p-h_traj[(k-1+N_spots)%N_spots])*(p-h_traj[(k-1+N_spots)%N_spots]);
 
-		S_part_B += v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
+		S_part_B += lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
 	S_part_A /= (2*a*a*m*omega*omega);
 	S=a*(S_part_A + S_part_B); 
@@ -349,7 +350,7 @@ int main(int argc, char *argv[])
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=99;
+	met_params.T_molec=49;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
 	met_params.e_lang=2.5e-5*5;
 	met_params.e_molec=met_params.e_lang;//for correspondence
