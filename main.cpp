@@ -190,6 +190,16 @@ double average_p_dot(double* const h_p_traj, struct hamiltonian_params_container
 	return result;
 }
 
+double sum_sq(double* h_traj)
+{
+	double res=0;
+	for (int i = 0; i < N_spots; i++)
+	{
+		res+=h_traj[i]*h_traj[i];
+	}
+	return res;
+}
+
 
 void copy_traj(double* destination, double* const source)
 {
@@ -222,7 +232,6 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 	S=a*(S_part_A + S_part_B); 
 	return S;
 }
-
 
 int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev_step,
 	double* h_pi_vect_prev_step,
