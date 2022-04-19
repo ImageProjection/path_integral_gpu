@@ -8,7 +8,7 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define lambda 5000.0
+#define lambda 300.0
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
 #define N_bins 1024
@@ -248,26 +248,22 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 
 		//evaluate trajectory for metropolis proposition (==make a step)
 
-		//perform iterations using Langevin algo
-		for (int iteration_counter=0; iteration_counter < met_params.T_lang; iteration_counter++)
+		//generate whole-indexed random momentum
+		for (int i = 0; i < N_spots; i++)
 		{
-			//phi(1)=phi(0)-eps_lang*{ds}/{dphi(0)} + sqrt(2eps_lang)*etta
-			for(int i=0; i<N_spots; i++)
-			{
-				p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
-				p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
-				p=h_p_traj[i];
-
-				S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
-				h_p_traj_new[i]=h_p_traj[i] + sqrt(2*met_params.e_lang)*my_normal_double(gen)
-				-met_params.e_lang*S_der;
-				delta_lang=h_p_traj_new[i]-h_p_traj[i];
-				delta_lang_der=-met_params.e_lang*S_der;
-				delta_lang_rand=delta_lang-delta_lang_der;
-			}
-			copy_traj(h_p_traj, h_p_traj_new);
+			h_pi_vect[i]=my_normal_double(gen);
 		}
+		//step in
+		for (int i = 0; i < N_spots; i++)
+		{
+			p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
+			p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
+			p=h_p_traj[i];
 
+			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
+			h_pi_vect[i]=h_pi_vect[i]-met_params.e_molec*0.5*S_der;
+		}
+		
 		//perform iterations using molecular dynamics algo
 		for (int iteration_counter=0; iteration_counter < met_params.T_molec; iteration_counter++)
 		{
@@ -293,18 +289,31 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			copy_traj(h_p_traj, h_p_traj_new);
 			copy_traj(h_pi_vect, h_pi_vect_new);
 		}
+		//step out
+		for (int i = 0; i < N_spots; i++)
+		{
+			p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
+			p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
+			p=h_p_traj[i];
+
+			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
+			h_pi_vect[i]=h_pi_vect[i]-met_params.e_molec*0.5*S_der;
+		}
+
 
 		//accept or discard this trajectory using standard metropolis fork
 		S_old=S(h_p_traj_prev_step, ham_params);
 		S_new=S(h_p_traj, ham_params);
+		H_old=0.5*sum_sq(h_pi_vect_prev_step) + S_old;
+		H_new=0.5*sum_sq(h_pi_vect) + S_new;
 		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
-		if (S_new < S_old)
+		if (H_new < H_old)
 		{
 			accepted++;
 		}
 			else
 			{
-				prob_acc=exp(S_old-S_new);
+				prob_acc=exp(H_old-H_new);
 				gamma=(double)rand()/RAND_MAX;
 				if (gamma < prob_acc)//then accept
 					{
@@ -328,10 +337,10 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 	//termo parameters
 	const int N_waiting_trajectories=85; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=320;//this many traj-s are used to build histogram
+	const int N_sample_trajectories=100*3;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1500;//this many metropolis propositions are made for each of this traj-s
 	N_spots=512;//int(beta/a);
-	double beta=1/0.7;//atof(argv[1]);
+	double beta=3;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
 	double a=beta/N_spots;//0.035*2;
 
@@ -349,7 +358,7 @@ int main(int argc, char *argv[])
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=29;
 	met_params.T_lang=1;//do not touch, unless it is pure Langevin
-	met_params.e_lang=2.5e-6;
+	met_params.e_lang=2.5e-6/3;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
