@@ -318,22 +318,22 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 		H_old=0.5*sum_sq(h_pi_vect_prev_step) + S_old;
 		//ssq=0.5*sum_sq(h_pi_vect);
 		H_new=0.5*sum_sq(h_pi_vect) + S_new;
-		//printf("Hn=%.3lf | Hol=%.3lf\n",H_new,H_old);
-		//printf("Sn=%.3lf | Sol=%.3lf\n",S_new,S_old);
+		//printf("Hn=%.3lf | Hol=%.3lf | delta=%.3lf\n",H_new,H_old,H_new-H_old);
+		//printf("Sn=%.3lf | Sol=%.3lf | delta=%.3lf\n",S_new,S_old,S_new-S_old);
 
 		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
-		if (H_new < H_old)
+		if (S_new < S_old)
 		{
 			accepted++;
 		}
 			else
 			{
-				prob_acc=exp(H_old-H_new);
+				prob_acc=exp(S_old-S_new);
 				gamma=(double)rand()/RAND_MAX;
 				if (gamma < prob_acc)//then accept
 					{
 						accepted++;
-						printf("acc exp\n");
+						//printf("acc exp\n");
 					}
 					else//do not accept, thus revert
 					{
@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
 	met_params.N_cycles_per_step=1;
 	met_params.T_molec=10;
 	met_params.T_lang=0;//do not touch, unless it is pure Langevin
-	met_params.e_lang=1e-3;
+	met_params.e_lang=0.0001;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
