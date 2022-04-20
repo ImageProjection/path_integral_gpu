@@ -239,7 +239,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 	struct hamiltonian_params_container ham_params,
 	struct metrop_params_container met_params)//h_p_traj_new (and both pi vectors) is purely for internal usage, but is allocated outside since it's 1 time	
 {	
-	double temp, delta_molec, delta_lang, delta_lang_der, delta_lang_rand;									 
+	double temp, delta_molec, delta_lang, delta_lang_der, delta_lang_rand,ssq;									 
 	int accepted=0;	
 	double H_new,H_old;
 	double a=ham_params.a;
@@ -314,8 +314,13 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 		//accept or discard this trajectory using standard metropolis fork
 		S_old=S(h_p_traj_prev_step, ham_params);
 		S_new=S(h_p_traj, ham_params);
+		//ssq=0.5*sum_sq(h_pi_vect_prev_step);
 		H_old=0.5*sum_sq(h_pi_vect_prev_step) + S_old;
+		//ssq=0.5*sum_sq(h_pi_vect);
 		H_new=0.5*sum_sq(h_pi_vect) + S_new;
+		//printf("Hn=%.3lf | Hol=%.3lf\n",H_new,H_old);
+		//printf("Sn=%.3lf | Sol=%.3lf\n",S_new,S_old);
+
 		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 		if (H_new < H_old)
 		{
@@ -328,6 +333,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				if (gamma < prob_acc)//then accept
 					{
 						accepted++;
+						printf("acc exp\n");
 					}
 					else//do not accept, thus revert
 					{
@@ -346,11 +352,11 @@ int main(int argc, char *argv[])
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
 	//termo parameters
-	const int N_waiting_trajectories=10; //number of Metropolis steps to termolise the system
-	const int N_sample_trajectories=10;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
+	const int N_waiting_trajectories=200; //number of Metropolis steps to termolise the system
+	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
+	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
 	N_spots=512;//int(beta/a);
-	double beta=3;//atof(argv[1]);
+	double beta=5;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
 	double a=beta/N_spots;//0.035*2;
 
@@ -366,7 +372,7 @@ int main(int argc, char *argv[])
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=12500;
+	met_params.T_molec=10;
 	met_params.T_lang=0;//do not touch, unless it is pure Langevin
 	met_params.e_lang=1e-3;
 	met_params.e_molec=met_params.e_lang;//for correspondence
@@ -504,7 +510,7 @@ int main(int argc, char *argv[])
 		//h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
 
 		//print trajectories with appended acc rate (evaluated over steps made for this traj)		
-		if (print_termo_traj_flag)
+		if (print_termo_traj_flag && (acc_rate>0.001))
 		{
 			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
 			//print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
@@ -540,7 +546,7 @@ int main(int argc, char *argv[])
 		//h_histogram(h_x_traj, h_x_hist, -x_range, x_range);
 
 		//print trajectories with appended acc rate (evaluated over steps made for this traj)		
-		if (print_traj_flag)
+		if (print_traj_flag && (acc_rate>0.001))
 		{
 			print_traj(out_p_traj,h_p_traj,accepted/N_steps_per_traj);
 			//print_traj(out_x_traj,h_x_traj,accepted/N_steps_per_traj);
