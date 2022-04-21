@@ -8,12 +8,13 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define lambda 200.0
+#define lambda 0.5
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
 #define N_bins 1024
 int N_spots=1024;
 
+double beta_param=5
 double sigma=0.9;
 const double acc_up_border=30;
 const double acc_low_border=23;
@@ -229,7 +230,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 		S_part_B += lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
 	S_part_A /= (2*a*a*m*omega*omega);
-	S=a*(S_part_A + S_part_B); 
+	S=a*(S_part_A + S_part_B)*beta_param; 
 	return S;
 }
 
@@ -271,6 +272,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			p=h_p_traj[i];
 
 			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
+			S_der*=beta_param;
 			h_pi_vect[i]=h_pi_vect[i]-met_params.e_molec*0.5*S_der;
 		}
 		
@@ -355,10 +357,10 @@ int main(int argc, char *argv[])
 	const int N_waiting_trajectories=200; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
-	N_spots=512;//int(beta/a);
+	N_spots=1000;//int(beta/a);
 	double beta=5;//atof(argv[1]);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=beta/N_spots;//0.035*2;
+	double a=0.2;//0.035*2;
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
