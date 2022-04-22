@@ -30,8 +30,8 @@ p_range=values[10]
 traj_p_range=values[11]
 
 #amount of frames used for video
-N_vid_fr=N_waiting_trajectories+N_sample_trajectories#min(300,N_sample_trajectories);
-#N_vid_fr=min(200,N_sample_trajectories);
+#N_vid_fr=N_waiting_trajectories+N_sample_trajectories#min(300,N_sample_trajectories);
+N_vid_fr=min(200,N_sample_trajectories);
 
 #figure, first used for p, then for x
 fig=plt.figure()

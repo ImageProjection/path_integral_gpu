@@ -17,8 +17,8 @@ for i in range(0,len(lines),2):
     error_line=list(map(float,lines[i+1].split(", ")))
     energies_list.append(val_line[0])
     energy_error_list.append(error_line[0])
-    beta_list.append(val_line[6])
-    temperatures_list.append(1/val_line[6])
+    beta_list.append(val_line[4])
+    temperatures_list.append(1/val_line[4])
 
 
 #plot energies

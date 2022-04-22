@@ -54,8 +54,7 @@ def aver_T_func(p_traj):
     pb=p_bottom
     result=0
     for i in range(N_spots):
-        result+= v_fermi*math.sqrt( (p_traj[i]**2-pb**2)**2/(4*pb**2)
-             + m*m*v_fermi*v_fermi )
+        result+= v_fermi*math.sqrt( (p_traj[i]**2-pb**2)**2/(4*pb**2) + m*m*v_fermi*v_fermi )
     return result/N_spots
 
 def aver_V_func(x_traj):
@@ -68,8 +67,8 @@ def aver_p_dot_func(p_traj):
     result=0
     for i in range(N_spots):
         result+= ( p_traj[i] - p_traj[(i-1+N_spots)%N_spots] )**2
-    result= result/(2*a*a*m*omega*omega)
-    return result/N_spots
+    result/=(2*a*a*m*omega*omega)
+    return 0.5/a-result/N_spots
 
 def kink_metr_func(p_traj):
     result=0
@@ -86,7 +85,6 @@ aver_E_vals=[]#from both
 kink_metr_vals=[]#p
 
 fp=open("out_p_traj.txt",'r')
-x=open("out_x_traj.txt",'r')
 #skip to sampling trajectories part in both files
 #if print_termo_traj_flag:
 #    for i in range(N_waiting_trajectories):
@@ -108,7 +106,7 @@ for line in fp:
 
 #evaluating "both" global values
 for i in range(N_sample_trajectories):
-    aver_E_vals.append(aver_T_vals[i]-aver_p_dot_vals[i])
+    aver_E_vals.append(aver_T_vals[i]+aver_p_dot_vals[i])
 
 
 #at this point all lists of values a filled
@@ -135,7 +133,7 @@ global_aver_kink_metr_error=np.std(kink_metr_vals)/math.sqrt(N_sample_trajectori
 f_locals=open("local_averages.txt","w")
 
 #format is
-#E, T, V, p_dot, rel, kink_metr, beta, 1/beta
+#E, T, p_dot, kink_metr, beta, 1/beta
 #same for errors, except error for beta is 0
 f_summary=open("global_averages.txt","a")
 

@@ -18,11 +18,11 @@ const double p0=2.0;
 const double v_fermi=1;
 
 const double a=0.01;
-const double dtau=0.01;//epsilon for md
+const double dtau=0.02;//epsilon for md
 const double beta= a*N;
 const int N_waiting_trajectories=100;
-const int N_sample_trajectories=100;
-const int N_steps_per_traj=3;
+const int N_sample_trajectories=40000;
+const int N_steps_per_traj=200;
 
 const int T_md=20;
 
@@ -119,10 +119,10 @@ int main(int argc, char *argv[])
 	srand(start.tv_usec);
 
 	//histogram parameters
-	const double p_range=3;
+	const double p_range=3*p0;
 	
 	//traj range for plotter
-	const double traj_p_range=3;
+	const double traj_p_range=3*p0;
 
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
     {
         for(int j=0; j<N_steps_per_traj; j++)
             accepted+=perform_sweeps();
-        //printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
+        printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
         accepted=0;
     }
     //sampling
@@ -164,6 +164,11 @@ int main(int argc, char *argv[])
         for(int j=0; j<N_steps_per_traj; j++)
             accepted+=perform_sweeps();
         //printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
+        if (i%100==0)
+        {
+            printf("i=%d\n",i);
+        }
+        
         accepted=0;
 		print_traj(out_p_traj);        
     }
