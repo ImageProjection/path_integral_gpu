@@ -8,17 +8,9 @@ random_device rd;
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
 
-#define lambda 0.5
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1
-#define N_bins 1024
 int N_spots=1024;
-
-double beta_param=5;
-double sigma=0.9;
-const double acc_up_border=30;
-const double acc_low_border=23;
-const double sigma_mult=1.12;
 
 int discarded_x_points=0;//number of x-traj points which did not fit into histogram range
 
@@ -53,17 +45,6 @@ double my_normal_double()//TODO try cuda for rng
 	return sqrt(-2*log(g2))*sin(2*M_PI*g1);
 }
 */
-void update_sigma(double acc_rate)
-{
-	if(acc_rate>acc_up_border)
-	{
-		sigma*=sigma_mult;
-	}
-	else if(acc_rate<acc_low_border)
-	{
-		sigma/=sigma_mult;
-	}
-}
 
 void print_traj(FILE* out_traj,double* traj,double acc_rate)
 {
@@ -73,133 +54,7 @@ void print_traj(FILE* out_traj,double* traj,double acc_rate)
 	}
 	fprintf(out_traj,"%.6lf\n",acc_rate);
 }
-/*
-void print_hist(FILE* out_dens_plot, double* h_dens_plot, double range_start, double range_end)
-{
-	double bin_width=(double)(range_end-range_start)/N_bins;
-	for (int i = 0; i < N_bins; i++)
-	{
-		fprintf(out_dens_plot,"%.8lf,%.8lf\n",range_start+i*bin_width,h_dens_plot[i]);
-	}
-}
 
-void normalize_hist(unsigned int* const h_hist, double* h_dens_plot, double range_start, double range_end)//also returns number of trajectory points used
-{
-	int val_sum=0;
-	double integral;//==val_sum*delta_x
-	double bin_width=(double)(range_end-range_start)/N_bins;//delta_x
-	for(int i=0;i<N_bins;i++)
-	{
-		val_sum+=h_hist[i];
-	}
-	integral=val_sum*bin_width;
-	for(int i=0;i<N_bins;i++)
-	{
-		h_dens_plot[i]=(double)h_hist[i]/integral;
-	}
-}
-
-void h_histogram(double* h_traj, unsigned int* h_hist, double range_start, double range_end)
-{
-	int bin_i;
-	double bin_width=double(range_end-range_start)/N_bins;
-	double abs;
-	for (int i = 0; i < N_spots; i++)
-	{
-		abs= ( (h_traj[i] >= 0) ? h_traj[i] : -h_traj[i] );
-		if (abs < range_end)
-		{
-			bin_i=floor( (h_traj[i]-range_start)/bin_width );
-			h_hist[bin_i]+=1;
-		}
-		else
-		{
-			discarded_x_points++;
-		}		
-	}	
-}
-
-void h_cumulative_transform(double* h_p_traj, double* h_x_traj,double a,double m)
-{
-	//memset to 0
-	for (int k = 0; k < N_spots; k++)
-	{
-		h_x_traj[k]=0;
-	}
-	//transform
-	h_x_traj[0]=h_p_traj[0]*a/m;
-	for (int j = 1; j < N_spots; j++)
-	{
-		h_x_traj[j]=h_x_traj[j-1]+h_p_traj[j]*a/m;
-	}
-}
-*/
-//average sqrt-thing over 1 sample traj
-double average_kinetic(double* const h_p_traj, struct hamiltonian_params_container ham_params)
-{
-	double result=0;
-	double a=ham_params.a;
-	double m=ham_params.m;
-	double pb=ham_params.p_b;
-	double v_fermi=ham_params.v_fermi;
-	double omega=ham_params.omega;
-	double p;
-	for(int i=0; i<N_spots; i++)
-	{
-		p=h_p_traj[i];
-		result+=v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
-	}
-	result = result/N_spots;
-
-	return result;
-}
-
-//average harmonic-potential-energy over 1 sample traj
-double average_potential(double* const h_x_traj, struct hamiltonian_params_container ham_params)
-{
-	double result=0;
-	double a=ham_params.a;
-	double m=ham_params.m;
-	double p_b=ham_params.p_b;
-	double v_fermi=ham_params.v_fermi;
-	double omega=ham_params.omega;
-	for(int i=0; i<N_spots; i++)
-	{
-		result+=h_x_traj[i]*h_x_traj[i];
-	}
-	result = result*0.5*m*omega*omega/N_spots;
-	return result;
-}
-
-//average p dot term over 1 sample traj
-double average_p_dot(double* const h_p_traj, struct hamiltonian_params_container ham_params)
-{
-	double result=0;
-	double a=ham_params.a;
-	double m=ham_params.m;
-	double p_b=ham_params.p_b;
-	double v_fermi=ham_params.v_fermi;
-	double omega=ham_params.omega;
-	double prev_node,p;
-	for(int i=0; i<N_spots; i++)
-	{
-		prev_node=h_p_traj[(i+N_spots-1)%N_spots];
-		p=h_p_traj[i];
-		result+=(p-prev_node)*(p-prev_node);
-	}
-	result = result / (2*a*a*m*omega*omega) / N_spots;
-	return result;
-}
-
-double sum_sq(double* h_traj)
-{
-	double res=0;
-	for (int i = 0; i < N_spots; i++)
-	{
-		res+=h_traj[i]*h_traj[i];
-	}
-	return res;
-}
 
 
 void copy_traj(double* destination, double* const source)
@@ -215,7 +70,6 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 	double S,p;
 	double S_part_A=0;//first term
 	double S_part_B=0;//part with T in it
-	double T_sq,T_m;
 	double prev_node;
 	double a=ham_params.a;
 	double m=ham_params.m;
@@ -225,12 +79,11 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 	for(int k=0; k<N_spots; k++)
 	{
 		p=h_traj[k];
-		S_part_A += (p-h_traj[(k-1+N_spots)%N_spots])*(p-h_traj[(k-1+N_spots)%N_spots]);
+		S += (p-h_traj[(k-1+N_spots)%N_spots])*(p-h_traj[(k-1+N_spots)%N_spots])/(2*a*a*m*omega*omega);
 
-		S_part_B += v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );//lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
+		S += v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );//lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
-	S_part_A /= (2*a*a*m*omega*omega);
-	S=a*(S_part_A + S_part_B); 
+	S*=a; 
 	return S;
 }
 
@@ -318,12 +171,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 		//accept or discard this trajectory using standard metropolis fork
 		S_old=S(h_p_traj_prev_step, ham_params);
 		S_new=S(h_p_traj, ham_params);
-		//ssq=0.5*sum_sq(h_pi_vect_prev_step);
 		H_old=0.5*sum_sq(h_pi_vect_prev_step) + S_old;
-		//ssq=0.5*sum_sq(h_pi_vect);
 		H_new=0.5*sum_sq(h_pi_vect) + S_new;
-		//printf("Hn=%.3lf | Hol=%.3lf | delta=%.3lf\n",H_new,H_old,H_new-H_old);
-		//printf("Sn=%.3lf | Sol=%.3lf | delta=%.3lf\n",S_new,S_old,S_new-S_old);
 
 		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 		if (H_new < H_old)
