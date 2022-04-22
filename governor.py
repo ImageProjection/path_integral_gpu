@@ -62,8 +62,9 @@ os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name)
 
 for i in range(0,len(beta_list)):
     #launch(ie reconfigure cpp file, then do nb_long_run)
-    repl("const int N=000;","const int N="+str(int(beta_lis[i]))+";")
+    repl("const int N=490;","const int N="+str(int(beta_list[i]))+";")
     os.system("make nb_long_run")
+    repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
     #create folder
     single_beta_folder_name=("N="+str(round(beta_list[i],0))+"_uid"+str(uniq_id)+"/")
     uniq_id+=1
