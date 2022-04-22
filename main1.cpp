@@ -20,6 +20,8 @@ const double dtau=0.01;
 const double beta= a*N;
 const int N_waiting_trajectories=200;
 const int N_sample_trajectories=200;
+const int N_steps_per_traj=1000;
+
 const int T_md=20;
 
 double p[N],oldp[N];
@@ -67,9 +69,10 @@ void run_md()
 
 double perform_sweeps()
 {
-    double accepted=0;
+    double accepted=0;//it is 0 or 1
     for(int i=0;i<N;i++)
         oldp[i]=p[i];
+    
     for(int i=0;i<N;i++)
         P[i]=my_normal_double(gen);
     double H_old=action();
@@ -95,14 +98,14 @@ double perform_sweeps()
                     for(int i = 0; i<N; i++)
                         p[i] = oldp[i];
         }
+    return accepted;
 }
 
 void print_traj(FILE* out_traj)
 {
 	for (int i=0; i < N; i++)
 		fprintf(out_traj,"%.14lf, ",p[i]);
-	fprintf(out_traj,"\n");
-    
+	fprintf(out_traj,"\n");    
 }
 
 
@@ -165,16 +168,22 @@ int main(int argc, char *argv[])
     for(int i=0;i<N;i++)
         p[i]=oldp[i]=0.0;
     
-    double accepted;
+    double accepted=0;
     //termo
     for(int i=0;i<N_waiting_trajectories;i++)
     {
-        accepted=perform_sweeps();
+        for(int j=0; j<N_steps_per_traj; j++)
+            accepted+=perform_sweeps();
+        printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
+        accepted=0;
     }
     //sampling
     for(int i=0;i<N_sample_trajectories;i++)
     {
-        accepted=perform_sweeps();
+        for(int j=0; j<N_steps_per_traj; j++)
+            accepted+=perform_sweeps();
+        printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
+        accepted=0;
 		print_traj(out_p_traj);        
     }
 
