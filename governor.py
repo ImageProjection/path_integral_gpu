@@ -5,9 +5,7 @@ local_averages.txt
 p_and_x_dens_plots.png
 out_gen_des.txt
 out_p_traj.txt
-out_x_traj.txt
 p_traj_evolution.mp4
-x_traj_evolution.mp4
 '''
 
 
@@ -15,8 +13,6 @@ files_list=("global_averages.txt "+
 "local_averages.txt "+
 "p_and_x_dens_plots.png "+
 "out_gen_des.txt "+
-"out_p_traj.txt "+
-"out_x_traj.txt "+
 "p_traj_evolution.mp4 "+
 "x_traj_evolution.mp4")
 
