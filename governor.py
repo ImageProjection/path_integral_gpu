@@ -34,8 +34,19 @@ uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
 
+def repl(a,b):#a->b
+    # Read in the file
+    with open('main1.cpp', 'r') as file :
+        filedata = file.read()
 
+    # Replace the target string
+    filedata = filedata.replace(a, b)
 
+    # Write the file out again
+    with open('main1.cpp', 'w') as file:
+        file.write(filedata)
+
+#main
 beta_start=200
 beta_stop=7
 n_beta_points=5
@@ -51,9 +62,10 @@ os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name)
 
 for i in range(0,len(beta_list)):
     #launch(ie reconfigure cpp file, then do nb_long_run)
-    #os.system("make nb_long_run beta_val="+str(beta_list[i])+" n_periods="+str(n_periods_list[i]))
+    repl("const int N=000;","const int N="+str(int(beta_lis[i]))+";")
+    os.system("make nb_long_run")
     #create folder
-    single_beta_folder_name=("beta="+str(round(beta_list[i],2))+"_uid"+str(uniq_id)+"/")
+    single_beta_folder_name=("N="+str(round(beta_list[i],0))+"_uid"+str(uniq_id)+"/")
     uniq_id+=1
     os.system(("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name
     +single_beta_folder_name))
