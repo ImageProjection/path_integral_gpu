@@ -20,7 +20,6 @@ nb_multi_beta_run:
 #used for single beta, pase like: make recipe beta_val=11.06
 nb_long_run:
 	g++ -O2 main.cpp && ./a.out $(beta_val) $(n_periods)\
-	&& /usr/bin/python p_cumulative_transform.py\
 	&& /usr/bin/python p_x_mp4_generator.py\
 	&& /usr/bin/python p_x_plot_densities.py\
 	&& /usr/bin/python p_traj_termod.py

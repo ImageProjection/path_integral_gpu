@@ -49,14 +49,6 @@ def init_p():
     line,=ax1.plot([],[],color="blue")
     return line,
 
-def init_x():
-    ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-traj_x_range,traj_x_range])
-    ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
-    ax1.set_xlabel("x_traj")
-    line,=ax1.plot([],[],color="blue")
-    return line,
-
 def upd_p(frame_i):
     ax1.clear()
     ax1.set_xlim([1,N_spots+1])
@@ -71,18 +63,6 @@ def upd_p(frame_i):
     ax1.set_xlabel(my_xlabel)
     return line,
 
-def upd_x(frame_i):
-    ax1.clear()
-    ax1.set_xlim([1,N_spots+1])
-    ax1.set_ylim([-traj_x_range,traj_x_range])
-    ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
-    ax1.set_xlabel("")
-    ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-    acc_rate=dig_ar[frame_i][N_spots]
-    my_xlabel="номер траектории:"+str(frame_i)+"\n"
-    line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
-    ax1.set_xlabel(my_xlabel)
-    return line,
 
 
 #main for p: read data, put animation into mp4 file
@@ -105,24 +85,3 @@ ani.save("beta="+str(round(beta,2))+"a="
 f.close()
 end_time=time.time()
 print("elapsed time plotting p (seconds):",round(end_time-start_time,1))
-
-'''
-#main for x: read data, put animation into mp4 file
-start_time=time.time()
-dig_ar=[] #2d array, first index is trajectory number, second is node in trajectory
-f=open("out_x_traj.txt",'r')
-n_lines=0
-for line in f:
-    dig_ar.append(list(map(float,line.split(","))))
-    n_lines+=1
-
-dig_ar=dig_ar[ (n_lines-N_vid_fr if n_lines-N_vid_fr>0 else 0) :]
-ani=animation.FuncAnimation(fig, upd_x, init_func=init_x, interval=200,frames=(N_vid_fr if n_lines-N_vid_fr>0 else n_lines), repeat=False, blit=0)
-
-plt.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-writervideo = animation.FFMpegWriter(fps=4)
-ani.save('x_traj_evolution.mp4', writer=writervideo)
-f.close()
-end_time=time.time()
-print("elapsed time plotting x (seconds):",round(end_time-start_time,1))
-'''

@@ -54,7 +54,7 @@ def add_hist(p_traj, h_hist, p_range):
 fig=plt.figure()
 h_p_hist=np.zeros(N_bins)
 #main for p
-ax1=fig.add_subplot(2,1,1)
+ax1=fig.add_subplot(1,1,1)
 fp=open("out_p_traj.txt",'r')
 #skip to sampling trajectories part in both files
 if print_termo_traj_flag:
@@ -77,32 +77,3 @@ ax1.set_xlabel("координата p")
 ax1.set_xlim(-p_range,p_range)
 ax1.set_xticks(np.arange(-p_range,p_range,1.0))
 ax1.step(x_data,y_data,color='red',linewidth = 1.1)
-
-#main for x
-h_x_hist=np.zeros(N_bins)
-ax2=fig.add_subplot(2,1,2)
-fx=open("out_x_traj.txt",'r')
-#read each line add to cumulative histogram
-for line in fx:
-        full_line=list(map(float,line.split(",")))
-        x_traj=full_line[0:N_spots]
-        discarded_x_points+=add_hist(x_traj,h_x_hist, x_range)
-
-h_x_dense_plot=h_x_hist/(np.sum(h_x_hist)*2.0*x_range/N_bins)
-
-x_data=np.linspace(-x_range,x_range,N_bins)
-y_data=h_x_dense_plot
-ax2.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-ax2.set_ylabel("|P(x)|^2")
-ax2.set_xlabel("координата x")
-ax2.set_xlim(-x_range,x_range)
-ax2.step(x_data,y_data,color='green',linewidth = 1.1)
-
-
-#display results
-plt.locator_params(nbins=20)
-plt.tight_layout()
-
-plt.savefig("p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)
-
-

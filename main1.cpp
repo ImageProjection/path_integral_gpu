@@ -15,8 +15,10 @@ const int N=490;
 const double m=0.1;
 const double omega=3.0;
 const double p0=2.0;
+const double v_fermi=1;
+
 const double a=0.01;
-const double dtau=0.01;
+const double dtau=0.01;//epsilon for md
 const double beta= a*N;
 const int N_waiting_trajectories=200;
 const int N_sample_trajectories=200;
@@ -121,48 +123,27 @@ int main(int argc, char *argv[])
 	
 	//traj range for plotter
 	const double traj_p_range=3;
-    /*
-	//display parameters to terminal
-	printf("===CPP CODE LAUNCH===\n");
-	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N);
-	printf("v_fermi=%.2lf\n",ham_params.v_fermi);
-	printf("p_b=%.2lf\n",ham_params.p_b);
-	printf("m m=%.2lf\n",ham_params.m);
-	printf("omega=%.2lf\n",ham_params.omega);
-	printf("number of sample trajectories=%d\n",N_sample_trajectories);
-	printf("N_waiting_trajectories=%d\n",N_waiting_trajectories);
-	printf("N_sample_trajectories=%d\n",N_sample_trajectories);
-	printf("N_steps_per_traj=%d\n",N_steps_per_traj);
-	printf("N_cycles_per_step=%d\n",met_params.N_cycles_per_step);
-	printf("T_molec=%d\n",T_md);
-    */
+
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
 	out_gen_des=fopen("out_gen_des.txt","w");
 	FILE *out_p_traj;
 	out_p_traj=fopen("out_p_traj.txt","w");
-    /*
+
 	//print general simulation description to file
-	fprintf(out_gen_des,"N_spots,%d\n",N_spots);
+	fprintf(out_gen_des,"N_spots,%d\n",N);
 	fprintf(out_gen_des,"N_waiting_trajectories,%d\n",N_waiting_trajectories);
 	fprintf(out_gen_des,"N_sample_trajectories,%d\n",N_sample_trajectories);
 	fprintf(out_gen_des,"N_steps_per_traj,%d\n",N_steps_per_traj);
 	fprintf(out_gen_des,"a,%.8lf\n",a);
 	fprintf(out_gen_des,"beta,%.8lf\n",beta);
-	fprintf(out_gen_des,"v_fermi,%.8lf\n",ham_params.v_fermi);
-	fprintf(out_gen_des,"m,%.8lf\n",ham_params.m);
-	fprintf(out_gen_des,"omega,%.8lf\n",ham_params.omega);
-	fprintf(out_gen_des,"p_b,%.8lf\n",ham_params.p_b);
+	fprintf(out_gen_des,"v_fermi,%.8lf\n",v_fermi);
+	fprintf(out_gen_des,"m,%.8lf\n",m);
+	fprintf(out_gen_des,"omega,%.8lf\n",omega);
+	fprintf(out_gen_des,"p_b,%.8lf\n",p0);
 	fprintf(out_gen_des,"p_range,%.8lf\n",p_range);
-	fprintf(out_gen_des,"x_range,%.8lf\n",x_range);
 	fprintf(out_gen_des,"traj_p_range,%.8lf\n",traj_p_range);
-	fprintf(out_gen_des,"traj_x_range,%.8lf\n",traj_x_range);
-	fprintf(out_gen_des,"sigma,%.8lf\n",sigma);
-	fprintf(out_gen_des,"print_termo_traj_flag,%d\n",print_termo_traj_flag);
 
-
-
-    */
 
     //init
     for(int i=0;i<N;i++)
