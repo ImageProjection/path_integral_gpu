@@ -13,8 +13,7 @@ files_list=("global_averages.txt "+
 "local_averages.txt "+
 "p_and_x_dens_plots.png "+
 "out_gen_des.txt "+
-"p_traj_evolution.mp4 "+
-"x_traj_evolution.mp4")
+"p_traj_evolution.mp4 ")
 
 
 import os
@@ -44,7 +43,7 @@ def repl(a,b):#a->b
 
 #main
 beta_start=200
-beta_stop=7
+beta_stop=400
 n_beta_points=5
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0]#p_bottom for now
