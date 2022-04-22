@@ -83,6 +83,7 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 
 		S += v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );//lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
+	S_part_A /= (2*a*a*m*omega*omega);
 	S*=a; 
 	return S;
 }

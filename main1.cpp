@@ -17,7 +17,7 @@ const double omega=3.0;
 const double p0=2.0;
 const double a=0.01;
 const double dtau=0.01;
-const double beta= a*N_spots;
+const double beta= a*N;
 const int N_waiting_trajectories=200;
 const int N_sample_trajectories=200;
 const int T_md=20;
@@ -31,7 +31,7 @@ double action()
     {
         int ir= (i+1)%N;
         res+=(p[ir]-p[i])*(p[ir]-p[i])/(2.0*a*m*omega*omega);
-        res+=a*sqrt((p[i]*p[i] - p0*p0)*(p[i]*p[i] - p0*p0)/4.0/p0/p0 + mass*mass);
+        res+=a*sqrt((p[i]*p[i] - p0*p0)*(p[i]*p[i] - p0*p0)/4.0/p0/p0 + m*m);
     }
     return res;
 }
@@ -42,8 +42,8 @@ void update_moment(double dtau)
     {
         int ir=(i+1)%N;
         int il=(i-1+N)%N;
-        double denomin = sqrt((p[i]*p[i] - p0*p0)*(p[i]*p[i] - p0*p0)/p0/p0 + 4.*mass*mass);
-		P[i] -= dtau*((-p[ir]+2*p[i]-p[il])/a/mass/omega/omega + a*(p[i]*p[i] - p0*p0)*p[i]/p0/p0/denomin);
+        double denomin = sqrt((p[i]*p[i] - p0*p0)*(p[i]*p[i] - p0*p0)/p0/p0 + 4.*m*m);
+		P[i] -= dtau*((-p[ir]+2*p[i]-p[il])/a/m/omega/omega + a*(p[i]*p[i] - p0*p0)*p[i]/p0/p0/denomin);
 
     }
 }
@@ -57,7 +57,7 @@ void update_phi(double dtau)//md molecular update for traj
 void run_md()
 {
     update_moment(dtau/2);
-	for(int t = 0; t<Ntau-1; t++) {
+	for(int t = 0; t<T_md-1; t++) {
 		update_phi(dtau);
 		update_moment(dtau);
 	}
@@ -72,7 +72,7 @@ double perform_sweeps()
         oldp[i]=p[i];
     for(int i=0;i<N;i++)
         P[i]=my_normal_double(gen);
-    double H_old=action()
+    double H_old=action();
     for(int i=0;i<N;i++)
         H_old+=P[i]*P[i]/2.0;
 
@@ -81,6 +81,8 @@ double perform_sweeps()
     double H_new=action();
     for(int i=0;i<N;i++)
         H_new+=P[i]*P[i]/2.0;
+
+    double prob_acc,gamma;
     if (H_new < H_old)
         accepted++;
         else
@@ -95,13 +97,12 @@ double perform_sweeps()
         }
 }
 
-void print_traj(FILE* out_traj,double* traj)
+void print_traj(FILE* out_traj)
 {
-	for (int i = 0; i < N_spots; i++)
-	{
-		fprintf(out_traj,"%.8lf, ",traj[i]);
-	}
-	fprintf(out_traj,"%.6lf\n");
+	for (int i=0; i < N; i++)
+		fprintf(out_traj,"%.14lf, ",p[i]);
+	fprintf(out_traj,"\n");
+    
 }
 
 
@@ -114,26 +115,23 @@ int main(int argc, char *argv[])
 
 	//histogram parameters
 	const double p_range=3;
-	const double x_range=1000;//tweaked manually, values outside are discarded
 	
 	//traj range for plotter
 	const double traj_p_range=3;
-	const double traj_x_range=1000;
     /*
 	//display parameters to terminal
 	printf("===CPP CODE LAUNCH===\n");
 	printf("beta=%.2lf with a=%.4lf and N_spots=%d\n",beta,a,N);
 	printf("v_fermi=%.2lf\n",ham_params.v_fermi);
 	printf("p_b=%.2lf\n",ham_params.p_b);
-	printf("mass m=%.2lf\n",ham_params.m);
+	printf("m m=%.2lf\n",ham_params.m);
 	printf("omega=%.2lf\n",ham_params.omega);
 	printf("number of sample trajectories=%d\n",N_sample_trajectories);
 	printf("N_waiting_trajectories=%d\n",N_waiting_trajectories);
 	printf("N_sample_trajectories=%d\n",N_sample_trajectories);
 	printf("N_steps_per_traj=%d\n",N_steps_per_traj);
 	printf("N_cycles_per_step=%d\n",met_params.N_cycles_per_step);
-	printf("T_molec=%d\n",met_params.T_molec);
-	printf("T_lang=%d\n",met_params.T_lang);
+	printf("T_molec=%d\n",T_md);
     */
 	//open files for output
 	FILE *out_gen_des;//lists simulation parameters
@@ -172,13 +170,12 @@ int main(int argc, char *argv[])
     for(int i=0;i<N_waiting_trajectories;i++)
     {
         accepted=perform_sweeps();
-		//print_traj(out_p_traj,h_p_traj);        
     }
     //sampling
-    for(int i=0;i<N_waiting_trajectories;i++)
+    for(int i=0;i<N_sample_trajectories;i++)
     {
         accepted=perform_sweeps();
-		print_traj(out_p_traj,h_p_traj);        
+		print_traj(out_p_traj);        
     }
 
 
