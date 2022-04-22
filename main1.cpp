@@ -12,7 +12,7 @@ normal_distribution<double> my_normal_double(0, 1);
 #define print_termo_traj_flag 1//termo traj
 
 const int N=490;//mus be 490 for governor script to work
-const double m=0.1;
+const double m=0.03;
 const double omega=3.0;
 const double p0=2.0;
 const double v_fermi=1;
@@ -21,7 +21,7 @@ const double a=0.01;
 const double dtau=0.02;//epsilon for md
 const double beta= a*N;
 const int N_waiting_trajectories=100;//100
-const int N_sample_trajectories=40000;//40000 for 15 min
+const int N_sample_trajectories=50000;//40000 for 15 min
 const int N_steps_per_traj=200;//200
 
 const int T_md=20;
@@ -106,7 +106,7 @@ double perform_sweeps()
 void print_traj(FILE* out_traj)
 {
 	for (int i=0; i < N; i++)
-		fprintf(out_traj,"%.4lf ",p[i]);
+		fprintf(out_traj,"%.10lf ",p[i]);
 	fprintf(out_traj,"\n");    
 }
 
