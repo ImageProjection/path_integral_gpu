@@ -20,9 +20,9 @@ const double v_fermi=1;
 const double a=0.01;
 const double dtau=0.01;//epsilon for md
 const double beta= a*N;
-const int N_waiting_trajectories=200;
-const int N_sample_trajectories=200;
-const int N_steps_per_traj=1000;
+const int N_waiting_trajectories=100;
+const int N_sample_trajectories=100;
+const int N_steps_per_traj=3;
 
 const int T_md=20;
 
@@ -106,7 +106,7 @@ double perform_sweeps()
 void print_traj(FILE* out_traj)
 {
 	for (int i=0; i < N; i++)
-		fprintf(out_traj,"%.14lf, ",p[i]);
+		fprintf(out_traj,"%.4lf ",p[i]);
 	fprintf(out_traj,"\n");    
 }
 
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
     {
         for(int j=0; j<N_steps_per_traj; j++)
             accepted+=perform_sweeps();
-        printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
+        //printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
         accepted=0;
     }
     //sampling
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     {
         for(int j=0; j<N_steps_per_traj; j++)
             accepted+=perform_sweeps();
-        printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
+        //printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
         accepted=0;
 		print_traj(out_p_traj);        
     }

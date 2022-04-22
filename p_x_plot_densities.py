@@ -28,15 +28,10 @@ m=values[7]
 omega=values[8]
 p_bottom=values[9]
 p_range=values[10]
-x_range=values[11]
-traj_p_range=values[12]
-traj_x_range=values[13]
-sigma=values[14]
-print_termo_traj_flag=values[15]
+traj_p_range=values[11]
 
 N_bins=1024
 discarded_p_points=0
-discarded_x_points=0
 
 #h_hist holds counts for bins
 def add_hist(p_traj, h_hist, p_range):
@@ -57,13 +52,12 @@ h_p_hist=np.zeros(N_bins)
 ax1=fig.add_subplot(1,1,1)
 fp=open("out_p_traj.txt",'r')
 #skip to sampling trajectories part in both files
-if print_termo_traj_flag:
-    for i in range(N_waiting_trajectories):
-        fp.readline()
+#for i in range(N_waiting_trajectories):
+#        fp.readline()
 #read each line add to cumulative histogram
 for line in fp:
-        full_line=list(map(float,line.split(",")))
-        p_traj=full_line[0:N_spots]
+        full_line=list(map(float,line.split()))
+        p_traj=full_line
         discarded_p_points+=add_hist(p_traj,h_p_hist, p_range)
 
 h_p_dense_plot=h_p_hist/(np.sum(h_p_hist)*2.0*p_range/N_bins)
@@ -77,3 +71,9 @@ ax1.set_xlabel("координата p")
 ax1.set_xlim(-p_range,p_range)
 ax1.set_xticks(np.arange(-p_range,p_range,1.0))
 ax1.step(x_data,y_data,color='red',linewidth = 1.1)
+
+#display results
+plt.locator_params(nbins=20)
+plt.tight_layout()
+
+plt.savefig("p_and_x_dens_plots.png",bbox_inches='tight',dpi=500)

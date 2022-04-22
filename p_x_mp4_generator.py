@@ -27,9 +27,7 @@ m=values[7]
 omega=values[8]
 p_bottom=values[9]
 p_range=values[10]
-x_range=values[11]
-traj_p_range=values[12]
-traj_x_range=values[13]
+traj_p_range=values[11]
 
 #amount of frames used for video
 N_vid_fr=N_waiting_trajectories+N_sample_trajectories#min(300,N_sample_trajectories);
@@ -54,10 +52,9 @@ def upd_p(frame_i):
     ax1.set_xlim([1,N_spots+1])
     ax1.set_ylim([-traj_p_range,traj_p_range])
     ax1.set_xticks(ticks=list(range(0,N_spots,N_spots//8))+[N_spots])
-    ax1.set_yticks(list(plt.yticks()[0]) + [p_bottom])
+    ax1.set_yticks(list(plt.yticks()[0]) + [p_bottom] + [-p_bottom])
     ax1.set_xlabel("")
     ax1.grid(color = 'black', linestyle = '--', linewidth = 0.5)
-    acc_rate=dig_ar[frame_i][N_spots]
     my_xlabel="номер траектории:"+str(frame_i)+"\n"
     line,=ax1.plot(range(1,N_spots+1),dig_ar[frame_i][0:N_spots],color="blue",lw=0.8)
     ax1.set_xlabel(my_xlabel)
@@ -71,7 +68,7 @@ dig_ar=[] #2d array, first index is trajectory number, second is node in traject
 f=open("out_p_traj.txt",'r')
 n_lines=0
 for line in f:
-    dig_ar.append(list(map(float,line.split(","))))
+    dig_ar.append(list(map(float,line.split())))
     n_lines+=1
 
 dig_ar=dig_ar[ (n_lines-N_vid_fr if n_lines-N_vid_fr>0 else 0) :]#so that only last are used, if not all
