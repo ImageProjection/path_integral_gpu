@@ -302,7 +302,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			copy_traj(h_p_traj, h_p_traj_new);
 			copy_traj(h_pi_vect, h_pi_vect_new);
 		}
-		//step out to whole indexes fo momentum
+		//step out to whole indexes for momentum
 		for (int i = 0; i < N_spots; i++)
 		{
 			p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
 	const int N_waiting_trajectories=200; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
-	N_spots=200;//int(beta/a);
+	N_spots=490;//int(beta/a);
 	//int n_periods=atoi(argv[2]); its for testing p_b
 	double a=0.01;//0.035*2;
 	double beta=a*N_spots;//atof(argv[1]);
@@ -368,8 +368,8 @@ int main(int argc, char *argv[])
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=1;
 	ham_params.m=0.1;
-	ham_params.omega=3;
-	ham_params.p_b=2;//atof(argv[2]);//corresponds to 'bottom' of potential
+	ham_params.omega=3.0;
+	ham_params.p_b=2.0;//atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
 	//actual init
 	for(int i=0; i<N_spots; i++)
 	{
-		h_p_traj[i]=ham_params.p_b*2;//*sin(n_periods*i*1.0/N_spots*2*M_PI);
+		h_p_traj[i]=ham_params.p_b*0;//*sin(n_periods*i*1.0/N_spots*2*M_PI);
 	}
 	for(int i=0; i<N_spots; i++)
 	{
@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
 		update_sigma(acc_rate);
 		if (i%1==0)
 		{
-			printf("Acceptance rate after reaching termo p-traj No (%d) %.4lf%\n",i,acc_rate);
+			printf("Acceptance rate after reaching termo p-traj No (%d) %.9lf%\n",i,acc_rate);
 		}
 
 		//evaluate x-trajectory
@@ -539,7 +539,7 @@ int main(int argc, char *argv[])
 		update_sigma(acc_rate);
 		if (i%1==0)
 		{
-			printf("Acceptance rate after reaching p-traj No (%d) %.4lf%\n",i,acc_rate);
+			printf("Acceptance rate after reaching p-traj No (%d) %.9lf%\n",i,acc_rate);
 		}
 
 		//evaluate x-trajectory
