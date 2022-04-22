@@ -20,9 +20,9 @@ const double v_fermi=1;
 const double a=0.01;
 const double dtau=0.02;//epsilon for md
 const double beta= a*N;
-const int N_waiting_trajectories=100;
-const int N_sample_trajectories=40000;
-const int N_steps_per_traj=200;
+const int N_waiting_trajectories=1;//100
+const int N_sample_trajectories=4;//40000 for 15 min
+const int N_steps_per_traj=2;//200
 
 const int T_md=20;
 
@@ -114,6 +114,7 @@ void print_traj(FILE* out_traj)
 
 int main(int argc, char *argv[])
 {
+    N=atoi(argv[1]);
     struct timeval start, end;
 	gettimeofday(&start, NULL);
 	srand(start.tv_usec);
