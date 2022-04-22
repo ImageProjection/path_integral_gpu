@@ -14,7 +14,7 @@ normal_distribution<double> my_normal_double(0, 1);
 #define N_bins 1024
 int N_spots=1024;
 
-double beta_param=5
+double beta_param=5;
 double sigma=0.9;
 const double acc_up_border=30;
 const double acc_low_border=23;
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
 	//termo parameters
 	const int N_waiting_trajectories=200; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
-	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
+	const int N_steps_per_traj=1000;//this many metropolis propositions are made for each of this traj-s
 	N_spots=200;//int(beta/a);
 	//int n_periods=atoi(argv[2]); its for testing p_b
 	double a=0.01;//0.035*2;
@@ -376,9 +376,9 @@ int main(int argc, char *argv[])
 	struct metrop_params_container met_params;
 	met_params.p_initial=ham_params.p_b;
 	met_params.N_cycles_per_step=1;
-	met_params.T_molec=12500;
+	met_params.T_molec=20;
 	met_params.T_lang=0;//do not touch, unless it is pure Langevin
-	met_params.e_lang=1e-3;
+	met_params.e_lang=1.e-2;
 	met_params.e_molec=met_params.e_lang;//for correspondence
 
 	//histogram parameters
