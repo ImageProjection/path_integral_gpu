@@ -227,10 +227,10 @@ double S(double* const h_traj, struct hamiltonian_params_container ham_params)//
 		p=h_traj[k];
 		S_part_A += (p-h_traj[(k-1+N_spots)%N_spots])*(p-h_traj[(k-1+N_spots)%N_spots]);
 
-		S_part_B += lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
+		S_part_B += v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );//lambda/4*(p*p-pb*pb)*(p*p-pb*pb);//v_fermi*sqrt(   m*m*v_fermi*v_fermi+ (p*p-pb*pb)*(p*p-pb*pb)/(4*pb*pb)   );
 	}
 	S_part_A /= (2*a*a*m*omega*omega);
-	S=a*(S_part_A + S_part_B)*beta_param; 
+	S=a*(S_part_A + S_part_B); 
 	return S;
 }
 
@@ -242,6 +242,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 {	
 	double temp, delta_molec, delta_lang, delta_lang_der, delta_lang_rand,ssq;									 
 	int accepted=0;	
+
 	double H_new,H_old;
 	double a=ham_params.a;
 	double m=ham_params.m;
@@ -271,8 +272,8 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 			p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
 			p=h_p_traj[i];
 
-			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
-			S_der*=beta_param;
+			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)+a*v_fermi*p*(p*p-pb*pb)/sqrt(  pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*m*m*v_fermi*v_fermi*pb*pb*pb*pb);
+			
 			h_pi_vect[i]=h_pi_vect[i]-met_params.e_molec*0.5*S_der;
 		}
 		
@@ -294,21 +295,22 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 				p_next_node=h_p_traj_new[(i+1+N_spots)%N_spots];
 				p=h_p_traj_new[i];
 
-				S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
+				S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)+a*v_fermi*p*(p*p-pb*pb)/sqrt(  pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*m*m*v_fermi*v_fermi*pb*pb*pb*pb);
 
 				h_pi_vect_new[i]=h_pi_vect[i] - met_params.e_molec*S_der;
 			}
 			copy_traj(h_p_traj, h_p_traj_new);
 			copy_traj(h_pi_vect, h_pi_vect_new);
 		}
-		//step out
+		//step out to whole indexes fo momentum
 		for (int i = 0; i < N_spots; i++)
 		{
 			p_prev_node=h_p_traj[(i-1+N_spots)%N_spots];
 			p_next_node=h_p_traj[(i+1+N_spots)%N_spots];
 			p=h_p_traj[i];
 
-			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega) + lambda*a*p*(p*p-pb*pb);
+			S_der=(2*p-(p_next_node+p_prev_node))/(a*m*omega*omega)+a*v_fermi*p*(p*p-pb*pb)/sqrt(  pb*pb*(p*p-pb*pb)*(p*p-pb*pb) + 4*m*m*v_fermi*v_fermi*pb*pb*pb*pb);
+			
 			h_pi_vect[i]=h_pi_vect[i]-met_params.e_molec*0.5*S_der;
 		}
 
@@ -321,7 +323,7 @@ int perform_sweeps(double* h_p_traj, double* h_p_traj_new, double* h_p_traj_prev
 		//ssq=0.5*sum_sq(h_pi_vect);
 		H_new=0.5*sum_sq(h_pi_vect) + S_new;
 		//printf("Hn=%.3lf | Hol=%.3lf | delta=%.3lf\n",H_new,H_old,H_new-H_old);
-		printf("Sn=%.3lf | Sol=%.3lf | delta=%.3lf\n",S_new,S_old,S_new-S_old);
+		//printf("Sn=%.3lf | Sol=%.3lf | delta=%.3lf\n",S_new,S_old,S_new-S_old);
 
 		//h_p_traj (what evolved) and h_p_traj_prev_step (what was) are competing, accepted is put into h_p_traj
 		if (H_new < H_old)
@@ -357,17 +359,17 @@ int main(int argc, char *argv[])
 	const int N_waiting_trajectories=200; //number of Metropolis steps to termolise the system
 	const int N_sample_trajectories=200;//this many traj-s are used to build histogram
 	const int N_steps_per_traj=1;//this many metropolis propositions are made for each of this traj-s
-	N_spots=1000;//int(beta/a);
-	double beta=5;//atof(argv[1]);
+	N_spots=200;//int(beta/a);
 	//int n_periods=atoi(argv[2]); its for testing p_b
-	double a=0.2;//0.035*2;
+	double a=0.01;//0.035*2;
+	double beta=a*N_spots;//atof(argv[1]);
 
 	//hamiltonian parameters
 	struct hamiltonian_params_container ham_params;
 	ham_params.v_fermi=1;
-	ham_params.m=1;
-	ham_params.omega=1;
-	ham_params.p_b=1;//atof(argv[2]);//corresponds to 'bottom' of potential
+	ham_params.m=0.1;
+	ham_params.omega=3;
+	ham_params.p_b=2;//atof(argv[2]);//corresponds to 'bottom' of potential
 	ham_params.a=a;
 	
 	//generation parameters for metropolis
