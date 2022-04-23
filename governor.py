@@ -48,9 +48,9 @@ def repl(a,b):#a->b
         file.write(filedata)
 
 #main
-beta_start=300
-beta_stop=300
-n_beta_points=1
+beta_start=320
+beta_stop=340
+n_beta_points=2
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]#p_bottom for now
 
@@ -66,7 +66,7 @@ for i in range(num_cores):
     core_folders_list.append("t"+str(i)+"/")
 for i in range(0,len(beta_list)):
     os.system("rm -rf work")
-    os.system("git clean -fx")
+    os.system("rm out_gen_des.txt")
     #launch(ie reconfigure cpp file, then do nb_long_run)
     repl("const int N=-333;","const int N="+str(int(beta_list[i]))+";")
     #os.system("make nb_long_run") | this line is now a long procedure, aimed to create out p traj and then

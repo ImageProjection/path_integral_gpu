@@ -21,7 +21,7 @@ const double a=0.01;
 const double dtau=0.02;//epsilon for md
 const double beta= a*N;
 const int N_waiting_trajectories=1000;//100
-const int N_sample_trajectories=4000;//40000 for 15 min
+const int N_sample_trajectories=40000;//40000 for 15 min
 const int N_steps_per_traj=200;//200
 
 const int T_md=20;
