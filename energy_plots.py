@@ -10,7 +10,7 @@ energy_error_list=[]
 beta_list=[]
 temperatures_list=[]
 #parse global averages file for E and \beta
-f=open("../path_integral_gpu/global_averages.txt",'r')
+f=open("global_averages.txt",'r')
 lines=f.readlines()
 for i in range(0,len(lines),2):
     val_line=list(map(float,lines[i].split(", ")))
@@ -37,4 +37,4 @@ ax2.grid()
 ax2.scatter(temperatures_list,energies_list,marker='o')
 plt.show()
 plt.savefig("energy_plot.png",bbox_inches='tight',dpi=600)
-plt.savefig("../path_integral_gpu_results/energy_plot.png",bbox_inches='tight',dpi=600)
+#plt.savefig("../path_integral_gpu_results/energy_plot.png",bbox_inches='tight',dpi=600)
