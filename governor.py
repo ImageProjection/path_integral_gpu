@@ -28,7 +28,7 @@ plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
 #eg ax1.set_xlabel(r'значение параметра $\beta$')
 
-num_cores=4
+num_cores=6
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
@@ -47,9 +47,9 @@ def repl(a,b):#a->b
         file.write(filedata)
 
 #main
-beta_start=190
-beta_stop=520
-n_beta_points=5
+beta_start=10
+beta_stop=20
+n_beta_points=3
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]#p_bottom for now
 
@@ -65,6 +65,7 @@ for i in range(num_cores):
     core_folders_list.append("t"+str(i)+"/")
 for i in range(0,len(beta_list)):
     os.system("rm -rf work")
+    os.system("git clean -fx")
     #launch(ie reconfigure cpp file, then do nb_long_run)
     repl("const int N=490;","const int N="+str(int(beta_list[i]))+";")
     #os.system("make nb_long_run") | this line is now a long procedure, aimed to create out p traj and then
@@ -94,10 +95,10 @@ for i in range(0,len(beta_list)):
     os.system("touch out_p_traj.txt")
     for j in range(len(core_folders_list)):
         os.system("cat work/"+core_folders_list[j]+"out_p_traj.txt "+">> "+"out_p_traj.txt")              
-    #can now go on
+    #can now go on, have functioning out_p_traj.txt as before
+
     os.system("cp work/t0/out_gen_des.txt .")
     os.system("make nb_long_run_no_c")
-    repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
     #create folder
     single_beta_folder_name=("N="+str(round(beta_list[i],0))+"_uid"+str(uniq_id)+"/")
     uniq_id+=1
@@ -106,6 +107,7 @@ for i in range(0,len(beta_list)):
     #copy results
     os.system(("cp "+files_list+" ../path_integral_gpu_results/"
     +multi_beta_folder_name+single_beta_folder_name))
+    repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
 
 #copy last termod summary to overhead folder
 os.system(("cp "+"global_averages.txt " + "../path_integral_gpu_results/"

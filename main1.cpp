@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
     {
         for(int j=0; j<N_steps_per_traj; j++)
             accepted+=perform_sweeps();
-        if (i%10==0)
+        if (i%20==0)
             printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
         accepted=0;
     }
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
         for(int j=0; j<N_steps_per_traj; j++)
             accepted+=perform_sweeps();
         //printf("acc_rate=%.2lf\n",accepted/N_steps_per_traj*100);
-        if (i%100==0)
+        if (i%300==0)
         {
             printf("i=%d\n",i);
         }
