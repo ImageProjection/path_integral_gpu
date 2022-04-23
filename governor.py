@@ -13,6 +13,7 @@ files_list=("global_averages.txt "+
 "local_averages.txt "+
 "p_and_x_dens_plots.png "+
 "out_gen_des.txt "+
+"out_p_traj.txt"+
 "p_traj_evolution.mp4 ")
 
 import sys
@@ -67,7 +68,7 @@ for i in range(0,len(beta_list)):
     os.system("rm -rf work")
     os.system("git clean -fx")
     #launch(ie reconfigure cpp file, then do nb_long_run)
-    repl("const int N=490;","const int N="+str(int(beta_list[i]))+";")
+    repl("const int N=-333;","const int N="+str(int(beta_list[i]))+";")
     #os.system("make nb_long_run") | this line is now a long procedure, aimed to create out p traj and then
     #go on with long run
     os.system("make nb_compile")#other part after folder merge
@@ -107,7 +108,7 @@ for i in range(0,len(beta_list)):
     #copy results
     os.system(("cp "+files_list+" ../path_integral_gpu_results/"
     +multi_beta_folder_name+single_beta_folder_name))
-    repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
+    repl("const int N="+str(int(beta_list[i]))+";","const int N=-333;")
 
 #copy last termod summary to overhead folder
 os.system(("cp "+"global_averages.txt " + "../path_integral_gpu_results/"
