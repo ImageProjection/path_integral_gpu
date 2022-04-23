@@ -16,6 +16,7 @@ files_list=("global_averages.txt "+
 "p_traj_evolution.mp4 ")
 
 import sys
+from subprocess import Popen
 import os
 import time
 from glob import glob
@@ -27,7 +28,7 @@ plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
 #eg ax1.set_xlabel(r'значение параметра $\beta$')
 
-num_cores=3
+num_cores=2
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
@@ -72,14 +73,17 @@ for i in range(0,len(beta_list)):
     for j in range(len(core_folders_list)):
         os.system("mkdir work/"+core_folders_list[j])
         os.system("cp a.out work/"+core_folders_list[j])
-        os.system("cp signaller.py work/"+core_folders_list[j])
-        txt_name="work/"+core_folders_list[j][:len(core_folders_list[j])-1]+".txt"
-        os.system("work/"+core_folders_list[j]+"/a.out && touch "+txt_name)
-        #os.system("/usr/bin/python work/"+core_folders_list[j]+"/signaller.py")
-
+    os.system("rm a.out")
+    
+    for j in range(len(core_folders_list)):
+        #txt_name="work/"+core_folders_list[j][:len(core_folders_list[j])-1]+".txt"
+        #time.sleep(2)
+        Popen("work/"+core_folders_list[j]+"a.out")
+    
+    sys.exit()
     while(1):
-        time.sleep(5)
-        filenames = glob("*.txt")
+        time.sleep(1)
+        filenames = glob("*dummy.txt")
         number_of_files = len(filenames)
         if number_of_files>=num_cores:
             break
@@ -87,7 +91,7 @@ for i in range(0,len(beta_list)):
     for j in range(len(core_folders_list)):
         os.system(core_folders_list[j]+"p_traj_evolution.txt "+">> "+"../p_traj_evolution.txt")            
     os.system("cd ..")    
-    os.system("rm -rf work")
+    #os.system("rm -rf work")
     #can now go on
     os.system("nb_long_run_no_c")
     repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")

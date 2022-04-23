@@ -22,7 +22,7 @@ const double dtau=0.02;//epsilon for md
 const double beta= a*N;
 const int N_waiting_trajectories=1;//100
 const int N_sample_trajectories=15;//40000 for 15 min
-const int N_steps_per_traj=2;//200
+const int N_steps_per_traj=20;//200
 
 const int T_md=20;
 
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 
 
 	fclose(out_p_traj);
-
+    fclose(out_gen_des);
 	//check for errors and print report
 	printf("===launch status report===\n");
 	
@@ -184,5 +184,11 @@ int main(int argc, char *argv[])
 	double total_time=((end.tv_sec  - start.tv_sec) * 1000000u + 
         end.tv_usec - start.tv_usec) / 1.e6;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
+
+    FILE *out_dummy;//lists simulation parameters
+	out_dummy=fopen("out_dummy.txt","w");
+    fprintf(out_dummy,"p_range,%.8lf\n",p_range);
+    fclose(out_dummy);
 	printf("===CPP CODE FINISHED WORKING===\n");
+    return 0;
 }

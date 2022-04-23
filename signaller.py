@@ -1,4 +1,2 @@
-import os
-import pathlib
-file_path = os.path.split(os.getcwd())[1]
-os.system("touch ../"+file_path+".txt")
+from subprocess import Popen
+Popen("/home/artem/Documents/path_integral_gpu/work/t0/a.out",cwd="work/t0/")
