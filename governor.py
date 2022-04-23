@@ -44,9 +44,9 @@ def repl(a,b):#a->b
 #main
 beta_start=190
 beta_stop=520
-n_beta_points=5
+n_beta_points=12
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
-n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0]#p_bottom for now
+n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]#p_bottom for now
 
 #create overhead launch folder
 date_time=strftime("%d.%m_%H:%M", localtime())
