@@ -67,7 +67,7 @@ for i in range(0,len(beta_list)):
     os.system("rm -rf work")
     #launch(ie reconfigure cpp file, then do nb_long_run)
     repl("const int N=490;","const int N="+str(int(beta_list[i]))+";")
-    #os.system("make nb_long_run") this line is now a long procedure, aimed to create out p traj and then
+    #os.system("make nb_long_run") | this line is now a long procedure, aimed to create out p traj and then
     #go on with long run
     os.system("make nb_compile")#other part after folder merge
     os.system("mkdir work")
@@ -93,8 +93,7 @@ for i in range(0,len(beta_list)):
             break
     os.system("touch out_p_traj.txt")
     for j in range(len(core_folders_list)):
-        os.system("work/"+core_folders_list[j]+"out_p_traj.txt "+">> "+"../out_p_traj.txt")            
-    os.system("cd ..")    
+        os.system("cat work/"+core_folders_list[j]+"out_p_traj.txt "+">> "+"out_p_traj.txt")              
     #can now go on
     os.system("make nb_long_run_no_c")
     repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
