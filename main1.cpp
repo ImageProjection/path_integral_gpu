@@ -11,7 +11,7 @@ normal_distribution<double> my_normal_double(0, 1);
 #define print_traj_flag 1//sample traj
 #define print_termo_traj_flag 1//termo traj
 
-const int N=437;//must be 490 for governor script to work
+const int N=490;//must be 490 for governor script to work
 const double m=0.1;
 const double omega=3.0;
 const double p0=2.0;

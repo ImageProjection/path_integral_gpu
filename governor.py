@@ -95,6 +95,7 @@ for i in range(0,len(beta_list)):
     for j in range(len(core_folders_list)):
         os.system("cat work/"+core_folders_list[j]+"out_p_traj.txt "+">> "+"out_p_traj.txt")              
     #can now go on
+    os.system("cp work/t0/out_gen_des.txt .")
     os.system("make nb_long_run_no_c")
     repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
     #create folder
