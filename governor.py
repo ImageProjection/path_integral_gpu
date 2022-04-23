@@ -28,7 +28,7 @@ plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
 #eg ax1.set_xlabel(r'значение параметра $\beta$')
 
-num_cores=2
+num_cores=4
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
@@ -76,11 +76,11 @@ for i in range(0,len(beta_list)):
     os.system("rm a.out")
     
     for j in range(len(core_folders_list)):
-        #txt_name="work/"+core_folders_list[j][:len(core_folders_list[j])-1]+".txt"
-        #time.sleep(2)
-        Popen("work/"+core_folders_list[j]+"a.out")
+        aout_path="/home/artem/Documents/path_integral_gpu/work/"+core_folders_list[j]+"a.out"
+        fold_path="/home/artem/Documents/path_integral_gpu/work/"+core_folders_list[j]
+        Popen(aout_path,cwd=fold_path)
     
-    sys.exit()
+    #sys.exit()
     while(1):
         time.sleep(1)
         filenames = glob("*dummy.txt")
