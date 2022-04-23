@@ -64,11 +64,12 @@ core_folders_list=[]
 for i in range(num_cores):
     core_folders_list.append("t"+str(i)+"/")
 for i in range(0,len(beta_list)):
+    os.system("rm -rf work")
     #launch(ie reconfigure cpp file, then do nb_long_run)
     repl("const int N=490;","const int N="+str(int(beta_list[i]))+";")
     #os.system("make nb_long_run") this line is now a long procedure, aimed to create out p traj and then
     #go on with long run
-    os.system("make nb_compile")#over part after folder merge
+    os.system("make nb_compile")#other part after folder merge
     os.system("mkdir work")
     for j in range(len(core_folders_list)):
         os.system("mkdir work/"+core_folders_list[j])
@@ -83,17 +84,19 @@ for i in range(0,len(beta_list)):
     #sys.exit()
     while(1):
         time.sleep(1)
-        filenames = glob("*dummy.txt")
-        number_of_files = len(filenames)
-        if number_of_files>=num_cores:
+        fileCounter = 0
+        for root, dirs, files in os.walk("work/"):
+            for file in files:    
+                if file.endswith('dummy.txt'):
+                    fileCounter += 1
+        if fileCounter>=num_cores:
             break
-    os.system("touch ../p_traj_evolution.txt")
+    os.system("touch out_p_traj.txt")
     for j in range(len(core_folders_list)):
-        os.system(core_folders_list[j]+"p_traj_evolution.txt "+">> "+"../p_traj_evolution.txt")            
+        os.system("work/"+core_folders_list[j]+"out_p_traj.txt "+">> "+"../out_p_traj.txt")            
     os.system("cd ..")    
-    #os.system("rm -rf work")
     #can now go on
-    os.system("nb_long_run_no_c")
+    os.system("make nb_long_run_no_c")
     repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
     #create folder
     single_beta_folder_name=("N="+str(round(beta_list[i],0))+"_uid"+str(uniq_id)+"/")
