@@ -37,7 +37,7 @@ nb_full_run:
 	g++ -O2 main.cpp && ./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py
 
 nb_compile:
-	g++ -O2 main.cpp
+	g++ -O2 main1.cpp
 
 nb_run:
 	./a.out && /usr/bin/python plotter.py && /usr/bin/python hist_plotter.py

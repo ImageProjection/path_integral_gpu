@@ -15,7 +15,7 @@ files_list=("global_averages.txt "+
 "out_gen_des.txt "+
 "p_traj_evolution.mp4 ")
 
-
+import sys
 import os
 import time
 from glob import glob
@@ -31,7 +31,8 @@ num_cores=3
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
-
+os.system("rm -rf work")
+#sys.exit()
 def repl(a,b):#a->b
     # Read in the file
     with open('main1.cpp', 'r') as file :
@@ -68,12 +69,13 @@ for i in range(0,len(beta_list)):
     #go on with long run
     os.system("make nb_compile")#over part after folder merge
     os.system("mkdir work")
-    os.system("cd work")
     for j in range(len(core_folders_list)):
-        os.system(mkdir(core_folders_list[j]))
-        os.system("cp ../a.out "+core_folders_list[j])
-        os.system("cp ../signaller.py "+core_folders_list[j])
-        os.system("./"+core_folders_list[j]+"a.out && signaller.py")
+        os.system("mkdir work/"+core_folders_list[j])
+        os.system("cp a.out work/"+core_folders_list[j])
+        os.system("cp signaller.py work/"+core_folders_list[j])
+        os.system("work/"+core_folders_list[j]+"/a.out")
+        os.system("python work/"+core_folders_list[j]+"signaller.py")
+
     while(1):
         time.sleep(5)
         filenames = glob("*.txt")
@@ -83,6 +85,7 @@ for i in range(0,len(beta_list)):
     os.system("touch ../p_traj_evolution.txt")
     for j in range(len(core_folders_list)):
         os.system(core_folders_list[j]+"p_traj_evolution.txt "+">> "+"../p_traj_evolution.txt")            
+    os.system("cd ..")    
     os.system("rm -rf work")
     #can now go on
     os.system("nb_long_run_no_c")
