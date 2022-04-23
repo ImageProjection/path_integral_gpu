@@ -17,6 +17,8 @@ files_list=("global_averages.txt "+
 
 
 import os
+import time
+from glob import glob
 from time import localtime, strftime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,6 +27,7 @@ plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
 #eg ax1.set_xlabel(r'значение параметра $\beta$')
 
+num_cores=3
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
@@ -44,7 +47,7 @@ def repl(a,b):#a->b
 #main
 beta_start=190
 beta_stop=520
-n_beta_points=12
+n_beta_points=5
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]#p_bottom for now
 
@@ -55,10 +58,34 @@ multi_beta_folder_name=(date_time
     +"/")
 os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name)
 
+core_folders_list=[]
+for i in range(num_cores):
+    core_folders_list.append("t"+str(i)+"/")
 for i in range(0,len(beta_list)):
     #launch(ie reconfigure cpp file, then do nb_long_run)
     repl("const int N=490;","const int N="+str(int(beta_list[i]))+";")
-    os.system("make nb_long_run")
+    #os.system("make nb_long_run") this line is now a long procedure, aimed to create out p traj and then
+    #go on with long run
+    os.system("make nb_compile")#over part after folder merge
+    os.system("mkdir work")
+    os.system("cd work")
+    for j in range(len(core_folders_list)):
+        os.system(mkdir(core_folders_list[j]))
+        os.system("cp ../a.out "+core_folders_list[j])
+        os.system("cp ../signaller.py "+core_folders_list[j])
+        os.system("./"+core_folders_list[j]+"a.out && signaller.py")
+    while(1):
+        time.sleep(5)
+        filenames = glob("*.txt")
+        number_of_files = len(filenames)
+        if number_of_files>=num_cores:
+            break
+    os.system("touch ../p_traj_evolution.txt")
+    for j in range(len(core_folders_list)):
+        os.system(core_folders_list[j]+"p_traj_evolution.txt "+">> "+"../p_traj_evolution.txt")            
+    os.system("rm -rf work")
+    #can now go on
+    os.system("nb_long_run_no_c")
     repl("const int N="+str(int(beta_list[i]))+";","const int N=490;")
     #create folder
     single_beta_folder_name=("N="+str(round(beta_list[i],0))+"_uid"+str(uniq_id)+"/")
@@ -71,5 +98,7 @@ for i in range(0,len(beta_list)):
 
 #copy last termod summary to overhead folder
 os.system(("cp "+"global_averages.txt " + "../path_integral_gpu_results/"
+    +multi_beta_folder_name))
+os.system(("cp "+"energy_plots.py " + "../path_integral_gpu_results/"
     +multi_beta_folder_name))
 
