@@ -13,7 +13,7 @@ files_list=("global_averages.txt "+
 "local_averages.txt "+
 "p_and_x_dens_plots.png "+
 "out_gen_des.txt "+
-"out_p_traj.txt"+
+"out_p_traj.txt "+
 "p_traj_evolution.mp4 ")
 
 import sys
@@ -29,7 +29,7 @@ plt.rcParams['text.latex.preamble']=r'\usepackage[utf8]{inputenc}'
 plt.rcParams['text.latex.preamble']=r'\usepackage[russian]{babel}'
 #eg ax1.set_xlabel(r'значение параметра $\beta$')
 
-num_cores=6
+num_cores=7
 uniq_id=1
 #clean folder before launch
 os.system("git clean -fx")
@@ -49,15 +49,15 @@ def repl(a,b):#a->b
 
 #main
 beta_start=300
-beta_stop=500
-n_beta_points=2
+beta_stop=300
+n_beta_points=1
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]#p_bottom for now
 
 #create overhead launch folder
 date_time=strftime("%d.%m_%H:%M", localtime())
 multi_beta_folder_name=(date_time
-    +"_beta_"+str(round(beta_start,2))+"to"+str(round(beta_stop,2))
+    +"_N_"+str(round(beta_start,2))+"to"+str(round(beta_stop,2))
     +"/")
 os.system("mkdir ../path_integral_gpu_results/"+multi_beta_folder_name)
 
