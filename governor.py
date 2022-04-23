@@ -73,8 +73,9 @@ for i in range(0,len(beta_list)):
         os.system("mkdir work/"+core_folders_list[j])
         os.system("cp a.out work/"+core_folders_list[j])
         os.system("cp signaller.py work/"+core_folders_list[j])
-        os.system("work/"+core_folders_list[j]+"/a.out")
-        os.system("python work/"+core_folders_list[j]+"signaller.py")
+        txt_name="work/"+core_folders_list[j][:len(core_folders_list[j])-1]+".txt"
+        os.system("work/"+core_folders_list[j]+"/a.out && touch "+txt_name)
+        #os.system("/usr/bin/python work/"+core_folders_list[j]+"/signaller.py")
 
     while(1):
         time.sleep(5)
