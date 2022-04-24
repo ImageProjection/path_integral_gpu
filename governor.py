@@ -48,9 +48,9 @@ def repl(a,b):#a->b
         file.write(filedata)
 
 #main
-beta_start=310
-beta_stop=420
-n_beta_points=8
+beta_start=400
+beta_stop=400
+n_beta_points=1
 beta_list=np.linspace(beta_start,beta_stop,n_beta_points,endpoint=True)
 n_periods_list=[1.2, 1.4, 1.6, 1.8, 2.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]#p_bottom for now
 

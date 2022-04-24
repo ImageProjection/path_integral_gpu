@@ -70,6 +70,7 @@ n_lines=0
 for line in f:
     dig_ar.append(list(map(float,line.split())))
     n_lines+=1
+f.close()
 
 dig_ar=dig_ar[ (n_lines-N_vid_fr if n_lines-N_vid_fr>0 else 0) :]#so that only last are used, if not all
 ani=animation.FuncAnimation(fig, upd_p, init_func=init_p, interval=200,frames=(N_vid_fr if n_lines-N_vid_fr>0 else n_lines), repeat=False, blit=0)
@@ -79,6 +80,5 @@ writervideo = animation.FFMpegWriter(fps=4)
 #ani.save("beta="+str(round(beta,2))+"a="
 #        +str(round(beta/N_spots,2))+"pb="+str(round(p_bottom,2))+"w="+str(round(omega,2))+"p_traj_evolution.mp4", writer=writervideo)
 ani.save("p_traj_evolution.mp4", writer=writervideo)
-f.close()
 end_time=time.time()
 print("elapsed time plotting p (seconds):",round(end_time-start_time,1))
