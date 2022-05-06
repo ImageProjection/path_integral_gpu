@@ -3,7 +3,9 @@
 #include <sys/time.h>
 #include <cmath>
 #include <random>
+
 using namespace std;
+
 random_device rd; 
 mt19937_64 gen(rd()); 
 normal_distribution<double> my_normal_double(0, 1); 
@@ -12,22 +14,23 @@ normal_distribution<double> my_normal_double(0, 1);
 #define print_termo_traj_flag 1//termo traj
 
 const int N=400;//must be -333 for governor script to work
-const double m=1.0;
+const double m=0.1;
 const double omega=3.0;
-const double p0=2.0;
+const double p0=1.5;
 const double v_fermi=1;
 
 const double a=0.01;
 const double dtau=0.03;//epsilon for md
 const double beta= a*N;
-const int N_waiting_trajectories=1000;//100
-const int N_sample_trajectories=40000;//40000 for 15 min
-const int N_steps_per_traj=200;//200
+const int N_waiting_trajectories=10;//100
+const int N_sample_trajectories=400;//40000 for 15 min
+const int N_steps_per_traj=20000;//200
 
 const int T_md=20;
 
 double p[N],oldp[N];
 double P[N];
+
 double action()
 {
     double res=0.0;
@@ -48,7 +51,6 @@ void update_moment(double dtau)
         int il=(i-1+N)%N;
         double denomin = sqrt((p[i]*p[i] - p0*p0)*(p[i]*p[i] - p0*p0)/p0/p0 + 4.*m*m);
 		P[i] -= dtau*((-p[ir]+2*p[i]-p[il])/a/m/omega/omega + a*(p[i]*p[i] - p0*p0)*p[i]/p0/p0/denomin);
-
     }
 }
 
@@ -168,8 +170,7 @@ int main(int argc, char *argv[])
         if (i%3000==0)
         {
             printf("i=%d\n",i);
-        }
-        
+        }        
         accepted=0;
 		print_traj(out_p_traj);        
     }
@@ -186,7 +187,7 @@ int main(int argc, char *argv[])
         end.tv_usec - start.tv_usec) / 1.e6;//in seconds
 	printf("TOTAL TIME: %.1lf seconds (%.1lf minutes)\n",total_time,total_time/60);
 
-    FILE *out_dummy;//lists simulation parameters
+    FILE *out_dummy;//to signal governor script that this core is done
 	out_dummy=fopen("out_dummy.txt","w");
     fprintf(out_dummy,"p_range,%.8lf\n",p_range);
     fclose(out_dummy);

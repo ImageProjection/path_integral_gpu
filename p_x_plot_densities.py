@@ -51,7 +51,7 @@ h_p_hist=np.zeros(N_bins)
 #main for p
 ax1=fig.add_subplot(1,1,1)
 fp=open("out_p_traj.txt",'r')
-#skip to sampling trajectories part in both files
+#skip to sampling trajectories part in both files #not used since they are not printed
 #for i in range(N_waiting_trajectories):
 #        fp.readline()
 #read each line add to cumulative histogram
